@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Підготовка до контрольної роботи</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .exercise-card {
+            transition: transform 0.1s ease, background-color 0.2s ease;
+        }
+        .exercise-card:active {
+            transform: scale(0.98);
+            background-color: #f9fafb;
+        }
+        .gradient-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+    </style>
+</head>
+<body class="pb-10">
+
+    <!-- Header -->
+    <header class="gradient-header text-white px-6 py-10 rounded-b-[2.5rem] shadow-lg mb-6">
+        <h1 class="text-2xl font-bold mb-2 text-center">Контрольна робота</h1>
+        <p class="text-indigo-100 text-center opacity-90 text-sm">Оберіть вправу для виконання</p>
+        <div class="mt-4 flex justify-center">
+            <span class="bg-white/20 px-4 py-1 rounded-full text-xs font-medium tracking-wide">
+                <i class="fa-solid fa-mobile-screen-button mr-1"></i> Мобільна версія
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="px-5 space-y-3">
+        
+        <!-- Exercise List -->
+        <div id="exercise-list" class="grid grid-cols-1 gap-3">
+            <script>
+                const exercises = [
+                    { id: 1, title: "Вправа 1", color: "blue", icon: "1" },
+                    { id: 2, title: "Вправа 2", color: "green", icon: "2" },
+                    { id: 3, title: "Вправа 3", color: "purple", icon: "3" },
+                    { id: 4, title: "Вправа 4", color: "orange", icon: "4" },
+                    { id: 5, title: "Вправа 5", color: "red", icon: "5" },
+                    { id: 6, title: "Вправа 6", color: "teal", icon: "6" },
+                    { id: 7, title: "Вправа 7", color: "indigo", icon: "7" },
+                    { id: 8, title: "Вправа 8", color: "pink", icon: "8" },
+                    { id: 9, title: "Вправа 9", color: "amber", icon: "9" },
+                    { id: 10, title: "Вправа 10", color: "slate", icon: "10" }
+                ];
+
+                const listContainer = document.getElementById('exercise-list');
+
+                exercises.forEach(ex => {
+                    const card = `
+                        <a href="exercises/ex${ex.id}.html" class="exercise-card flex items-center p-5 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-indigo-200">
+                            <div class="w-10 h-10 flex-shrink-0 rounded-full bg-gray-50 border-2 border-indigo-100 flex items-center justify-center text-indigo-600 font-bold mr-4">
+                                ${ex.id}
+                            </div>
+                            <div class="flex-grow">
+                                <h3 class="font-semibold text-gray-800 text-lg">${ex.title}</h3>
+                            </div>
+                            <div class="text-gray-300">
+                                <i class="fa-solid fa-chevron-right text-sm"></i>
+                            </div>
+                        </a>
+                    `;
+                    listContainer.innerHTML += card;
+                });
+            </script>
+        </div>
+
+        <!-- Info Section -->
+        <div class="mt-8 p-6 bg-white rounded-3xl border border-gray-100 shadow-sm">
+            <h4 class="text-gray-900 font-bold mb-3 flex items-center">
+                <i class="fa-solid fa-circle-check text-green-500 mr-2"></i> Важливо знати
+            </h4>
+            <ul class="text-sm text-gray-600 space-y-4">
+                <li class="flex items-start">
+                    <div class="bg-indigo-50 text-indigo-600 w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center mr-3 text-xs font-bold">1</div>
+                    <p>Проходьте завдання по черзі, починаючи з першого.</p>
+                </li>
+                <li class="flex items-start">
+                    <div class="bg-indigo-50 text-indigo-600 w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center mr-3 text-xs font-bold">2</div>
+                    <p>Після завершення кожної вправи обов'язково робіть скріншот.</p>
+                </li>
+            </ul>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-10 text-center text-gray-400 text-[10px] uppercase tracking-widest px-6">
+        <p>© 2026 МОНІТОРИНГ ЗНАНЬ</p>
+    </footer>
+
+</body>
+</html>
