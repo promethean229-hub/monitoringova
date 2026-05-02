@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Фізика традицій: Стрітенська свічка</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .drag-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+        .drag-item:active { cursor: grabbing; transform: scale(1.02); }
+        
+        .slot {
+            transition: all 0.3s ease;
+            min-height: 110px;
+            border: 2px dashed #d4d4d8;
+            background: #fafafa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+        .slot.active {
+            border-color: #f59e0b;
+            background: #fffbeb;
+            transform: scale(1.02);
+        }
+        .slot.correct {
+            border-color: #10b981;
+            background: #ecfdf5;
+            border-style: solid;
+        }
+        .slot.wrong-item {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        /* Екран нагадування про поворот */
+        #orientation-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #451a03;
+            color: white;
+            z-index: 10000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 30px;
+        }
+
+        @media (orientation: portrait) {
+            #orientation-overlay {
+                display: flex;
+            }
+        }
+
+        .wax-texture {
+            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f59e0b' fill-opacity='0.05' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+        }
+    </style>
+</head>
+<body class="bg-stone-100 min-h-screen font-sans p-2 md:p-4 wax-texture">
+
+    <!-- Обов'язкове нагадування для телефонів -->
+    <div id="orientation-overlay">
+        <div class="animate-bounce mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" transform="rotate(90 12 12)"/>
+                <path d="M12 15l-3-3 3-3"/>
+                <path d="M15 12H9"/>
+            </svg>
+        </div>
+        <h2 class="text-2xl font-black uppercase tracking-widest text-yellow-500">Поверніть пристрій!</h2>
+        <p class="mt-4 text-stone-300 max-w-xs">Для зручного планування виготовлення свічки поставте телефон у <b>горизонтальне положення</b> (landscape).</p>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-4 bg-white p-4 md:p-6 rounded-2xl shadow-md border-b-4 border-yellow-500">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                <h1 class="text-xl md:text-2xl font-bold text-stone-800 flex items-center">
+                    <span class="mr-2 text-2xl">🕯️</span> Фізика традицій: Стрітенська свічка
+                </h1>
+                <span class="text-[10px] bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-bold uppercase">Майстерня свічкаря</span>
+            </div>
+            <p class="text-stone-600 mt-2 text-sm">
+                Визначте правильну послідовність дій для фіксації температури тверднення бджолиного воску.
+            </p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+            <!-- Секція з варіантами -->
+            <div class="bg-stone-200/50 p-3 md:p-4 rounded-2xl border border-stone-300">
+                <h3 class="font-bold text-stone-700 mb-3 flex items-center uppercase text-[10px] tracking-widest">
+                    <span class="bg-stone-800 text-white w-5 h-5 rounded-full inline-flex items-center justify-center mr-2 text-[10px]">?</span>
+                    Доступні операції:
+                </h3>
+                <div id="source-container" class="space-y-2 md:space-y-3">
+                    <!-- Картки будуть тут -->
+                </div>
+            </div>
+
+            <!-- Секція для збирання -->
+            <div class="flex flex-col">
+                <h3 class="font-bold text-stone-700 mb-3 flex items-center uppercase text-[10px] tracking-widest">
+                    <span class="bg-yellow-600 text-white w-5 h-5 rounded-full inline-flex items-center justify-center mr-2 text-[10px]">✓</span>
+                    Послідовність дій майстра:
+                </h3>
+                <div id="target-slots" class="space-y-3 md:space-y-4">
+                    <!-- Слоти будуть тут -->
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-stone-200 shadow-lg gap-4">
+            <button id="reset-btn" class="text-stone-400 hover:text-stone-600 font-bold uppercase text-[10px] tracking-widest transition px-4 py-2">Почати спочатку</button>
+            <div id="feedback" class="font-bold text-sm text-center px-4 min-h-[1.25rem]"></div>
+            <button id="check-btn" class="w-full md:w-auto bg-stone-800 text-yellow-500 px-12 py-4 rounded-xl font-black uppercase text-sm shadow-xl hover:bg-stone-700 transition transform active:scale-95 border-b-4 border-stone-950">Перевірити план</button>
+        </div>
+    </div>
+
+    <script>
+        // Web Audio API Sound System
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSfx(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'pick') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.linearRampToValueAtTime(880, now + 0.05);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(); osc.stop(now + 0.1);
+            } else if (type === 'drop') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(660, now);
+                osc.frequency.linearRampToValueAtTime(440, now + 0.1);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                osc.start(); osc.stop(now + 0.15);
+            } else if (type === 'success') {
+                const notes = [523, 659, 783, 1046]; // C-E-G-C chord
+                notes.forEach((f, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.frequency.setValueAtTime(f, now + i*0.1);
+                    g.gain.setValueAtTime(0.05, now + i*0.1);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + i*0.1 + 0.4);
+                    o.start(now + i*0.1); o.stop(now + i*0.1 + 0.4);
+                });
+            } else if (type === 'error') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(120, now);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.3);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(); osc.stop(now + 0.3);
+            }
+        }
+
+        const correctSteps = [
+            {
+                id: "wax_step1",
+                text: "Вибрати термометр з межею вимірювання понад +80 °C",
+                reason: "Віск плавиться при 62-68 °C, термометр має охоплювати весь діапазон охолодження.",
+                isCorrect: true
+            },
+            {
+                id: "wax_step2",
+                text: "Проводити заміри температури щохвилини після вимкнення нагріву",
+                reason: "Це дозволить точно помітити 'плато' — зупинку падіння температури під час застигання воску.",
+                isCorrect: true
+            },
+            {
+                id: "wax_step3",
+                text: "Не виймати термометр із воску до завершення вимірювань",
+                reason: "Щоб не розірвати тепловий контакт та не зламати прилад, який 'вмерзне' у воскову масу.",
+                isCorrect: true
+            }
+        ];
+
+        const distractorSteps = [
+            {
+                id: "wax_dist1",
+                text: "Додати лід у розплавлену масу для миттєвого тверднення",
+                reason: "Це зруйнує структуру воскової пластини та зробить неможливим наукове спостереження.",
+                isCorrect: false
+            },
+            {
+                id: "wax_dist2",
+                text: "Вимірювати освітленість робочого місця свічкаря",
+                reason: "Рівень світла ніяк не впливає на фізичні властивості воску та швидкість його охолодження.",
+                isCorrect: false
+            }
+        ];
+
+        const allBlocks = [...correctSteps, ...distractorSteps];
+        let draggedElement = null;
+
+        function createBlocks() {
+            const source = document.getElementById('source-container');
+            const target = document.getElementById('target-slots');
+            const shuffled = [...allBlocks].sort(() => Math.random() - 0.5);
+            
+            shuffled.forEach(step => {
+                const block = document.createElement('div');
+                block.className = 'drag-item bg-white p-3 md:p-4 rounded-xl border border-stone-200 shadow-sm hover:shadow-md hover:border-yellow-400 active:scale-95';
+                block.draggable = true;
+                block.id = step.id;
+                block.innerHTML = `
+                    <div class="text-stone-800 font-bold text-[13px] md:text-sm leading-tight">${step.text}</div>
+                    <div class="text-stone-400 text-[10px] mt-2 italic leading-relaxed border-t border-stone-50 pt-2">${step.reason}</div>
+                `;
+                
+                block.addEventListener('dragstart', (e) => {
+                    draggedElement = block;
+                    e.dataTransfer.setData('text/plain', block.id);
+                    block.classList.add('opacity-40');
+                    playSfx('pick');
+                });
+                
+                block.addEventListener('dragend', () => {
+                    block.classList.remove('opacity-40');
+                    draggedElement = null;
+                });
+
+                // Mobile Touch Support
+                block.addEventListener('touchstart', handleTouchStart, {passive: false});
+                block.addEventListener('touchmove', handleTouchMove, {passive: false});
+                block.addEventListener('touchend', handleTouchEnd);
+
+                source.appendChild(block);
+            });
+
+            for(let i = 0; i < 3; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'slot rounded-xl p-4 text-stone-300 text-[10px] uppercase tracking-widest text-center font-bold border-2';
+                slot.dataset.index = i;
+                slot.innerText = `Етап ${i + 1}`;
+                
+                slot.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    slot.classList.add('active');
+                });
+                
+                slot.addEventListener('dragleave', () => slot.classList.remove('active'));
+                
+                slot.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    slot.classList.remove('active');
+                    const id = e.dataTransfer.getData('text/plain');
+                    const el = document.getElementById(id);
+                    dropIntoSlot(slot, el);
+                    playSfx('drop');
+                });
+                
+                target.appendChild(slot);
+            }
+        }
+
+        function dropIntoSlot(slot, el) {
+            if (slot.querySelector('.drag-item')) {
+                const existing = slot.querySelector('.drag-item');
+                document.getElementById('source-container').appendChild(existing);
+            }
+            slot.innerText = '';
+            slot.appendChild(el);
+        }
+
+        // Touch Handlers for Mobile
+        let touchItem = null;
+        let initialX, initialY;
+
+        function handleTouchStart(e) {
+            touchItem = e.currentTarget;
+            const rect = touchItem.getBoundingClientRect();
+            initialX = e.touches[0].pageX - rect.left;
+            initialY = e.touches[0].pageY - rect.top;
+            
+            touchItem.style.position = 'fixed';
+            touchItem.style.zIndex = '1000';
+            touchItem.style.width = rect.width + 'px';
+            touchItem.style.pointerEvents = 'none';
+            moveAt(e.touches[0].pageX, e.touches[0].pageY);
+            playSfx('pick');
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            moveAt(e.touches[0].pageX, e.touches[0].pageY);
+            
+            // Візуалізація активного слота
+            const touch = e.touches[0];
+            const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
+            const slotBelow = elemBelow ? elemBelow.closest('.slot') : null;
+            if (slotBelow) slotBelow.classList.add('active');
+        }
+
+        function moveAt(pageX, pageY) {
+            touchItem.style.left = pageX - initialX + 'px';
+            touchItem.style.top = pageY - initialY + 'px';
+        }
+
+        function handleTouchEnd(e) {
+            touchItem.style.position = '';
+            touchItem.style.left = '';
+            touchItem.style.top = '';
+            touchItem.style.width = '';
+            touchItem.style.pointerEvents = 'auto';
+            
+            const touch = e.changedTouches[0];
+            const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            const slot = elemBelow ? elemBelow.closest('.slot') : null;
+            
+            document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
+            
+            if (slot) {
+                dropIntoSlot(slot, touchItem);
+                playSfx('drop');
+            } else {
+                document.getElementById('source-container').appendChild(touchItem);
+            }
+            touchItem = null;
+        }
+
+        document.getElementById('check-btn').addEventListener('click', () => {
+            const slots = document.querySelectorAll('.slot');
+            let correctCount = 0;
+            let totalFilled = 0;
+
+            slots.forEach((slot, index) => {
+                const child = slot.querySelector('.drag-item');
+                slot.classList.remove('correct', 'wrong-item');
+                if (child) {
+                    totalFilled++;
+                    if (child.id === correctSteps[index].id) {
+                        slot.classList.add('correct');
+                        correctCount++;
+                    } else {
+                        slot.classList.add('wrong-item');
+                    }
+                }
+            });
+
+            const feedback = document.getElementById('feedback');
+            if (totalFilled < 3) {
+                feedback.innerText = "Майстер чекає! Потрібно визначити всі 3 етапи.";
+                feedback.className = "text-amber-600 animate-pulse";
+                playSfx('error');
+            } else if (correctCount === 3) {
+                feedback.innerText = "Ідеально! План складено, свічка буде освячена. 🕯️✨";
+                feedback.className = "text-green-600 scale-105 transition-all duration-500 font-black";
+                playSfx('success');
+            } else {
+                feedback.innerText = "У ланцюжку помилка. Подумайте, яка дія має бути першою!";
+                feedback.className = "text-red-600";
+                playSfx('error');
+            }
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            location.reload();
+        });
+
+        createBlocks();
+    </script>
+</body>
+</html>
