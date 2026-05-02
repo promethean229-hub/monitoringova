@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Формули теплових процесів (Симетричний графік)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .drop-zone {
+            transition: all 0.3s ease;
+            border: 2px dashed #cbd5e1;
+            background-color: rgba(255, 255, 255, 0.8);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 50px;
+            z-index: 10;
+        }
+        .drop-zone.active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .draggable {
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            padding: 4px 8px;
+            background: white;
+        }
+        .draggable:active {
+            cursor: grabbing;
+        }
+        .correct {
+            background-color: #dcfce7 !important;
+            border-color: #22c55e !important;
+            color: #166534 !important;
+        }
+        .wrong {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+        }
+        
+        sub {
+            font-size: 0.65em;
+            vertical-align: sub;
+            line-height: 0;
+        }
+
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #1e293b;
+            color: white;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (orientation: portrait) {
+            #orientation-warning {
+                display: flex;
+            }
+        }
+
+        @media (max-height: 650px) {
+            h1 { font-size: 1rem !important; margin-bottom: 0.1rem !important; }
+            header p { display: none; }
+            .main-container { padding: 0.3rem !important; }
+            #main-svg { height: 260px !important; }
+            .card-grid { gap: 0.2rem !important; margin-bottom: 0.2rem !important; }
+            .controls { padding-top: 0.2rem !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans overflow-x-hidden">
+
+    <div id="orientation-warning">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h6" />
+        </svg>
+        <h2 class="text-xl font-bold">Будь ласка, поверніть пристрій</h2>
+        <p class="mt-2 text-center px-4 text-sm">Використовуйте альбомну орієнтацію для перегляду симетричного графіка.</p>
+    </div>
+
+    <div id="app-container" class="max-w-6xl mx-auto bg-white min-h-screen md:min-h-0 md:rounded-2xl shadow-xl p-3 md:p-6 main-container">
+        <header class="flex justify-between items-start mb-2">
+            <div class="text-center w-full">
+                <h1 class="text-lg md:text-2xl font-bold text-slate-800 uppercase tracking-tight">Симетричний цикл теплових процесів</h1>
+                <p class="text-slate-600 text-xs md:text-sm">Розставте формули (використовуйте <i>r</i> для пароутворення)</p>
+            </div>
+        </header>
+
+        <div class="relative flex justify-center mb-4 overflow-hidden">
+            <div class="relative inline-block bg-white rounded-xl p-2 border border-slate-100 shadow-inner">
+                <svg width="840" height="340" viewBox="0 0 840 340" class="max-w-full h-auto" id="main-svg">
+                    <!-- Helper Lines (Grid) -->
+                    <line x1="40" y1="200" x2="800" y2="200" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="5,5" />
+                    <line x1="40" y1="100" x2="800" y2="100" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="5,5" />
+                    <text x="45" y="195" font-size="10" fill="#94a3b8">t плавл.</text>
+                    <text x="45" y="95" font-size="10" fill="#94a3b8">t кипіння</text>
+
+                    <!-- Axes -->
+                    <line x1="40" y1="300" x2="800" y2="300" stroke="#334155" stroke-width="2" marker-end="url(#arrow-x)" />
+                    <line x1="40" y1="300" x2="40" y2="20" stroke="#334155" stroke-width="2" marker-end="url(#arrow-y)" />
+                    
+                    <text x="810" y="315" font-size="12" fill="#334155" font-weight="bold">τ</text>
+                    <text x="10" y="30" font-size="12" fill="#334155" font-weight="bold">t, °C</text>
+                    
+                    <!-- Symmetrical Graph Path -->
+                    <path d="M 40 300 L 100 200 L 180 200 L 280 100 L 400 100 L 420 60 L 440 100 L 560 100 L 660 200 L 740 200 L 800 300" fill="none" stroke="#475569" stroke-width="2.5" />
+                    
+                    <!-- Labels -->
+                    <text x="95" y="195" font-weight="bold" font-size="11" fill="#1e293b">A</text>
+                    <text x="175" y="195" font-weight="bold" font-size="11" fill="#1e293b">B</text>
+                    <text x="275" y="95" font-weight="bold" font-size="11" fill="#1e293b">C</text>
+                    <text x="395" y="95" font-weight="bold" font-size="11" fill="#1e293b">D</text>
+                    <text x="565" y="95" font-weight="bold" font-size="11" fill="#1e293b">E</text>
+                    <text x="665" y="195" font-weight="bold" font-size="11" fill="#1e293b">F</text>
+                    <text x="745" y="195" font-weight="bold" font-size="11" fill="#1e293b">G</text>
+
+                    <defs>
+                        <marker id="arrow-x" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" /></marker>
+                        <marker id="arrow-y" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" /></marker>
+                    </defs>
+                </svg>
+
+                <!-- Symmetrical Drop Zones -->
+                <div id="zone-1" data-id="1" class="drop-zone absolute rounded-lg text-[9px]" style="left: 35px; top: 230px; width: 100px; height: 35px;">0-A (лід)</div>
+                <div id="zone-2" data-id="2" class="drop-zone absolute rounded-lg text-[9px]" style="left: 105px; top: 160px; width: 70px; height: 35px;">A-B (пл)</div>
+                <div id="zone-3" data-id="3" class="drop-zone absolute rounded-lg text-[9px]" style="left: 190px; top: 120px; width: 100px; height: 35px;">B-C (вода)</div>
+                <div id="zone-4" data-id="4" class="drop-zone absolute rounded-lg text-[9px]" style="left: 300px; top: 60px; width: 100px; height: 35px;">C-D (вип)</div>
+                <div id="zone-5" data-id="5" class="drop-zone absolute rounded-lg text-[9px]" style="left: 450px; top: 60px; width: 100px; height: 35px;">D-E (конд)</div>
+                <div id="zone-6" data-id="6" class="drop-zone absolute rounded-lg text-[9px]" style="left: 560px; top: 120px; width: 100px; height: 35px;">E-F (вода)</div>
+                <div id="zone-7" data-id="7" class="drop-zone absolute rounded-lg text-[9px]" style="left: 670px; top: 160px; width: 70px; height: 35px;">F-G (кр)</div>
+                <div id="zone-8" data-id="8" class="drop-zone absolute rounded-lg text-[9px]" style="left: 710px; top: 230px; width: 100px; height: 35px;">G-... (лід)</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 card-grid" id="cards-container"></div>
+
+        <div class="flex justify-between items-center border-t pt-3 controls">
+            <button id="reset-btn" class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition text-xs font-bold uppercase">Скинути</button>
+            <div id="feedback" class="font-bold text-sm"></div>
+            <button id="check-btn" class="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs font-bold uppercase shadow-lg">Перевірити</button>
+        </div>
+    </div>
+
+    <script>
+        const formulas = [
+            { id: "1", html: "Q<sub>нагр.л</sub> = c<sub>л</sub>mΔt", label: "0-A" },
+            { id: "2", html: "Q<sub>плавл</sub> = λm", label: "A-B" },
+            { id: "3", html: "Q<sub>нагр.в</sub> = c<sub>в</sub>mΔt", label: "B-C" },
+            { id: "4", html: "Q<sub>вип</sub> = rm", label: "C-D" },
+            { id: "5", html: "Q<sub>конд</sub> = rm", label: "D-E" },
+            { id: "6", html: "Q<sub>охол.в</sub> = c<sub>в</sub>mΔt", label: "E-F" },
+            { id: "7", html: "Q<sub>крист</sub> = λm", label: "F-G" },
+            { id: "8", html: "Q<sub>охол.л</sub> = c<sub>л</sub>mΔt", label: "G-..." }
+        ];
+
+        const cardsContainer = document.getElementById('cards-container');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const checkBtn = document.getElementById('check-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const feedback = document.getElementById('feedback');
+
+        let draggedItem = null;
+
+        function init() {
+            const shuffled = [...formulas].sort(() => Math.random() - 0.5);
+            cardsContainer.innerHTML = '';
+            shuffled.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'draggable border-2 border-slate-200 p-2 rounded-lg shadow-sm text-[11px] md:text-[13px] text-center font-serif italic hover:border-blue-400 transition transform';
+                card.draggable = true;
+                card.innerHTML = item.html;
+                card.dataset.id = item.id;
+                
+                card.addEventListener('dragstart', (e) => {
+                    draggedItem = card;
+                    e.dataTransfer.setData('text/plain', item.id);
+                    card.classList.add('opacity-50');
+                });
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('opacity-50');
+                    draggedItem = null;
+                });
+                card.addEventListener('touchstart', handleTouchStart, {passive: false});
+                card.addEventListener('touchmove', handleTouchMove, {passive: false});
+                card.addEventListener('touchend', handleTouchEnd);
+
+                cardsContainer.appendChild(card);
+            });
+        }
+
+        function placeCard(zone, card) {
+            if (card.parentElement.classList.contains('drop-zone')) {
+                const prevId = card.parentElement.dataset.id;
+                card.parentElement.innerHTML = formulas.find(f => f.id === prevId).label;
+            }
+            zone.innerHTML = '';
+            card.style.position = 'static';
+            card.style.width = 'auto';
+            zone.appendChild(card);
+        }
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('active'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('active'));
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('active');
+                if (draggedItem) placeCard(zone, draggedItem);
+            });
+        });
+
+        checkBtn.addEventListener('click', () => {
+            let correct = 0;
+            let filled = 0;
+            dropZones.forEach(zone => {
+                const child = zone.querySelector('.draggable');
+                if (child) {
+                    filled++;
+                    if (zone.dataset.id === child.dataset.id) {
+                        child.classList.add('correct');
+                        child.classList.remove('wrong');
+                        correct++;
+                    } else {
+                        child.classList.add('wrong');
+                        child.classList.remove('correct');
+                    }
+                }
+            });
+
+            if (filled === 0) {
+                feedback.innerText = "Розмістіть формули!";
+                feedback.className = "text-amber-500";
+            } else if (correct === formulas.length) {
+                feedback.innerText = "Ідеально! Графік повністю симетричний. 🏆";
+                feedback.className = "text-green-600";
+            } else {
+                feedback.innerText = `Правильно: ${correct} з ${formulas.length}`;
+                feedback.className = "text-blue-500";
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            init();
+            dropZones.forEach(zone => {
+                zone.innerHTML = formulas.find(f => f.id === zone.dataset.id).label;
+            });
+            feedback.innerText = '';
+        });
+
+        let touchTarget = null;
+        function handleTouchStart(e) {
+            touchTarget = e.target.closest('.draggable');
+            if (!touchTarget) return;
+            touchTarget.classList.add('opacity-50');
+            touchTarget.style.position = 'fixed';
+            touchTarget.style.zIndex = '1000';
+            touchTarget.style.pointerEvents = 'none';
+            updateTouchPos(e);
+        }
+        function handleTouchMove(e) {
+            if (!touchTarget) return;
+            e.preventDefault();
+            updateTouchPos(e);
+        }
+        function handleTouchEnd(e) {
+            if (!touchTarget) return;
+            touchTarget.classList.remove('opacity-50');
+            touchTarget.style.pointerEvents = 'auto';
+            const touch = e.changedTouches[0];
+            const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            const zone = elemBelow ? elemBelow.closest('.drop-zone') : null;
+            if (zone) placeCard(zone, touchTarget);
+            else {
+                touchTarget.style.position = 'static';
+                cardsContainer.appendChild(touchTarget);
+            }
+            touchTarget = null;
+        }
+        function updateTouchPos(e) {
+            const touch = e.touches[0];
+            touchTarget.style.left = (touch.clientX - touchTarget.offsetWidth / 2) + 'px';
+            touchTarget.style.top = (touch.clientY - touchTarget.offsetHeight / 2) + 'px';
+        }
+
+        init();
+    </script>
+</body>
+</html>
