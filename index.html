@@ -15,12 +15,17 @@
         .exercise-card {
             transition: transform 0.1s ease, background-color 0.2s ease;
         }
-        .exercise-card:active {
+        .active-card:active {
             transform: scale(0.98);
             background-color: #f9fafb;
         }
         .gradient-header {
             background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+        .locked {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
         }
     </style>
 </head>
@@ -59,16 +64,30 @@
                 const listContainer = document.getElementById('exercise-list');
 
                 exercises.forEach(ex => {
+                    const isActive = ex.id <= 5;
+                    const cardClass = isActive 
+                        ? "exercise-card active-card flex items-center p-5 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-indigo-200" 
+                        : "exercise-card locked flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-200 shadow-none";
+                    
+                    const href = isActive ? `exercises/ex${ex.id}.html` : "javascript:void(0)";
+                    const icon = isActive 
+                        ? '<i class="fa-solid fa-chevron-right text-sm"></i>' 
+                        : '<i class="fa-solid fa-lock text-sm"></i>';
+                    const badgeClass = isActive
+                        ? "w-10 h-10 flex-shrink-0 rounded-full bg-indigo-50 border-2 border-indigo-100 flex items-center justify-center text-indigo-600 font-bold mr-4"
+                        : "w-10 h-10 flex-shrink-0 rounded-full bg-gray-200 border-2 border-gray-300 flex items-center justify-center text-gray-500 font-bold mr-4";
+
                     const card = `
-                        <a href="exercises/ex${ex.id}.html" class="exercise-card flex items-center p-5 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-indigo-200">
-                            <div class="w-10 h-10 flex-shrink-0 rounded-full bg-gray-50 border-2 border-indigo-100 flex items-center justify-center text-indigo-600 font-bold mr-4">
+                        <a href="${href}" class="${cardClass}">
+                            <div class="${badgeClass}">
                                 ${ex.id}
                             </div>
                             <div class="flex-grow">
                                 <h3 class="font-semibold text-gray-800 text-lg">${ex.title}</h3>
+                                ${!isActive ? '<span class="text-[10px] text-gray-400 font-medium uppercase tracking-tighter">Очікується доступ</span>' : ''}
                             </div>
-                            <div class="text-gray-300">
-                                <i class="fa-solid fa-chevron-right text-sm"></i>
+                            <div class="${isActive ? 'text-indigo-400' : 'text-gray-400'}">
+                                ${icon}
                             </div>
                         </a>
                     `;
@@ -80,8 +99,11 @@
         <!-- Info Section -->
         <div class="mt-8 p-6 bg-white rounded-3xl border border-gray-100 shadow-sm">
             <h4 class="text-gray-900 font-bold mb-3 flex items-center">
-                <i class="fa-solid fa-circle-check text-green-500 mr-2"></i> Важливо знати
+                <i class="fa-solid fa-circle-info text-blue-500 mr-2"></i> Важливо знати
             </h4>
+            <p class="text-xs text-gray-500 mb-4 leading-relaxed">
+                Наразі вам доступні перші 5 вправ. Будь ласка, дотримуйтесь інструкцій нижче для звітності.
+            </p>
             <ul class="text-sm text-gray-600 space-y-4">
                 <li class="flex items-start">
                     <div class="bg-indigo-50 text-indigo-600 w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center mr-3 text-xs font-bold">1</div>
@@ -89,7 +111,11 @@
                 </li>
                 <li class="flex items-start">
                     <div class="bg-indigo-50 text-indigo-600 w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center mr-3 text-xs font-bold">2</div>
-                    <p>Після завершення кожної вправи обов'язково робіть скріншот.</p>
+                    <p>Після завершення кожної вправи обов'язково робіть <b>скріншот результату</b>.</p>
+                </li>
+                <li class="flex items-start text-indigo-700 font-medium">
+                    <div class="bg-indigo-600 text-white w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center mr-3 text-xs font-bold shadow-sm">3</div>
+                    <p>Всі скріншоти прикріпіть до відповідного завдання та <b>відправте в Classroom</b>.</p>
                 </li>
             </ul>
         </div>
