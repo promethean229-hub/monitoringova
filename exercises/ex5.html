@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Експеримент: ККД нагрівача</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Налаштування MathJax перед завантаженням скрипта -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            options: {
+                enableMenu: false
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        .drag-item {
+            transition: all 0.2s ease;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+        .drag-item:active { cursor: grabbing; transform: scale(0.98); }
+        
+        .slot {
+            transition: all 0.3s ease;
+            min-height: 120px;
+            border: 2px dashed #cbd5e1;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            gap: 8px;
+        }
+        .slot.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .slot.correct {
+            border-color: #10b981;
+            background: #ecfdf5;
+            border-style: solid;
+        }
+        .slot.wrong-item {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        #orientation-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0f172a;
+            color: white;
+            z-index: 10000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 30px;
+        }
+
+        @media (orientation: portrait) {
+            #orientation-overlay { display: flex; }
+        }
+
+        .lab-texture {
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2364748b' fill-opacity='0.03' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans p-2 md:p-4 lab-texture text-slate-900">
+
+    <div id="orientation-overlay">
+        <div class="animate-bounce mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" transform="rotate(90 12 12)"/>
+                <path d="M12 15l-3-3 3-3"/>
+                <path d="M15 12H9"/>
+            </svg>
+        </div>
+        <h2 class="text-2xl font-black uppercase tracking-widest text-blue-400 text-center">Поверніть пристрій!</h2>
+        <p class="mt-4 text-slate-300 max-w-xs">Для роботи з приладами поставте телефон у <b>горизонтальне положення</b>.</p>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-4 bg-white p-4 md:p-6 rounded-2xl shadow-md border-b-4 border-blue-600">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                <h1 class="text-xl md:text-2xl font-bold text-slate-800 flex items-center">
+                    <span class="mr-2 text-2xl">🧪</span> Лабораторний планер: ККД нагрівача
+                </h1>
+                <span class="text-[10px] bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-bold uppercase">Фізика 8 клас</span>
+            </div>
+            <p class="text-slate-600 mt-2 text-sm">
+                Сформуйте набір обладнання та виберіть необхідні дані для визначення ККД сухого спирту.
+            </p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-1 bg-slate-200/50 p-3 rounded-2xl border border-slate-300">
+                <h3 class="font-bold text-slate-700 mb-3 uppercase text-[10px] tracking-widest flex items-center">
+                    <span class="bg-slate-800 text-white w-5 h-5 rounded-full inline-flex items-center justify-center mr-2 text-[10px]">?</span>
+                    Склад обладнання:
+                </h3>
+                <div id="source-container" class="flex flex-wrap gap-2 md:flex-col"></div>
+            </div>
+
+            <div class="md:col-span-2 space-y-4">
+                <div>
+                    <h3 class="font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-widest">1. Прилади для досліду (мінімум 3):</h3>
+                    <div id="slot-instruments" class="slot rounded-xl" data-type="instruments"></div>
+                </div>
+                
+                <div>
+                    <h3 class="font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-widest">2. Таблична величина:</h3>
+                    <div id="slot-table" class="slot rounded-xl" data-type="table"></div>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-widest">3. Причина ККД < 100%:</h3>
+                    <div id="slot-reason" class="slot rounded-xl" data-type="reason"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-stone-200 shadow-lg gap-4">
+            <button id="reset-btn" class="text-slate-400 hover:text-slate-600 font-bold uppercase text-[10px] tracking-widest transition">Скинути</button>
+            <div id="feedback" class="font-bold text-sm text-center px-4 min-h-[1.5rem]"></div>
+            <button id="check-btn" class="w-full md:w-auto bg-blue-600 text-white px-10 py-3 rounded-xl font-black uppercase text-sm shadow-xl hover:bg-blue-700 transition transform active:scale-95">Перевірити план</button>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            if (type === 'pick') {
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.linearRampToValueAtTime(880, now + 0.05);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(); osc.stop(now + 0.1);
+            } else if (type === 'drop') {
+                osc.frequency.setValueAtTime(660, now);
+                osc.frequency.linearRampToValueAtTime(440, now + 0.1);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                osc.start(); osc.stop(now + 0.15);
+            } else if (type === 'success') {
+                [523, 659, 783, 1046].forEach((f, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.frequency.setValueAtTime(f, now + i*0.1);
+                    g.gain.setValueAtTime(0.05, now + i*0.1);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + i*0.1 + 0.4);
+                    o.start(now + i*0.1); o.stop(now + i*0.1 + 0.4);
+                });
+            } else if (type === 'error') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(150, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(); osc.stop(now + 0.3);
+            }
+        }
+
+        const items = [
+            { id: "i1", cat: "instrument", text: "Терези", correct: true },
+            { id: "i2", cat: "instrument", text: "Термометр", correct: true },
+            { id: "i3", cat: "instrument", text: "Мензурка", correct: true },
+            { id: "i4", cat: "instrument", text: "Барометр", correct: false },
+            { id: "i5", cat: "instrument", text: "Амперметр", correct: false },
+            { id: "i6", cat: "instrument", text: "Гігрометр", correct: false },
+            { id: "t1", cat: "table", text: "Питома теплота згоряння ($q$)", correct: true },
+            { id: "t2", cat: "table", text: "Питома теплота пароутворення ($r$)", correct: false },
+            { id: "r1", cat: "reason", text: "Теплообмін з повітрям та нагрів склянки", correct: true },
+            { id: "r2", cat: "reason", text: "Низька якість сухого спирту", correct: false }
+        ];
+
+        let draggedEl = null;
+
+        function refreshMath() {
+            if (window.MathJax && window.MathJax.typeset) {
+                window.MathJax.typeset();
+            }
+        }
+
+        function init() {
+            const container = document.getElementById('source-container');
+            const shuffled = [...items].sort(() => Math.random() - 0.5);
+            
+            shuffled.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'drag-item bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm text-xs font-bold text-slate-700';
+                el.draggable = true;
+                el.id = item.id;
+                el.innerHTML = item.text;
+                
+                el.addEventListener('dragstart', (e) => {
+                    draggedEl = el;
+                    e.dataTransfer.setData('text/plain', el.id);
+                    playSfx('pick');
+                });
+                
+                el.addEventListener('touchstart', handleTouchStart, {passive: false});
+                el.addEventListener('touchmove', handleTouchMove, {passive: false});
+                el.addEventListener('touchend', handleTouchEnd);
+
+                container.appendChild(el);
+            });
+
+            document.querySelectorAll('.slot').forEach(slot => {
+                slot.addEventListener('dragover', e => e.preventDefault());
+                slot.addEventListener('dragenter', () => slot.classList.add('active'));
+                slot.addEventListener('dragleave', () => slot.classList.remove('active'));
+                slot.addEventListener('drop', e => {
+                    e.preventDefault();
+                    slot.classList.remove('active');
+                    const id = e.dataTransfer.getData('text/plain');
+                    handleDrop(slot, document.getElementById(id));
+                });
+            });
+
+            setTimeout(refreshMath, 100);
+        }
+
+        function handleDrop(slot, el) {
+            const type = slot.dataset.type;
+            if (type !== 'instruments' && slot.children.length > 0) {
+                const prev = slot.children[0];
+                document.getElementById('source-container').appendChild(prev);
+            }
+            slot.appendChild(el);
+            playSfx('drop');
+            refreshMath();
+        }
+
+        let touchTarget = null;
+        let tX, tY;
+
+        function handleTouchStart(e) {
+            touchTarget = e.currentTarget;
+            const r = touchTarget.getBoundingClientRect();
+            tX = e.touches[0].pageX - r.left;
+            tY = e.touches[0].pageY - r.top;
+            touchTarget.style.position = 'fixed';
+            touchTarget.style.width = r.width + 'px';
+            touchTarget.style.zIndex = '1000';
+            touchTarget.style.pointerEvents = 'none';
+            moveAt(e.touches[0].pageX, e.touches[0].pageY);
+            playSfx('pick');
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            moveAt(e.touches[0].pageX, e.touches[0].pageY);
+            const t = e.touches[0];
+            const below = document.elementFromPoint(t.clientX, t.clientY);
+            document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
+            const sBelow = below?.closest('.slot');
+            if (sBelow) sBelow.classList.add('active');
+        }
+
+        function moveAt(x, y) {
+            touchTarget.style.left = x - tX + 'px';
+            touchTarget.style.top = y - tY + 'px';
+        }
+
+        function handleTouchEnd(e) {
+            touchTarget.style.position = '';
+            touchTarget.style.left = ''; touchTarget.style.top = '';
+            touchTarget.style.width = ''; touchTarget.style.pointerEvents = 'auto';
+            const t = e.changedTouches[0];
+            const below = document.elementFromPoint(t.clientX, t.clientY);
+            const slot = below?.closest('.slot');
+            document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
+            if (slot) handleDrop(slot, touchTarget);
+            else document.getElementById('source-container').appendChild(touchTarget);
+            touchTarget = null;
+        }
+
+        document.getElementById('check-btn').addEventListener('click', () => {
+            const feedback = document.getElementById('feedback');
+            const slotInstr = document.getElementById('slot-instruments');
+            const slotTable = document.getElementById('slot-table');
+            const slotReason = document.getElementById('slot-reason');
+
+            const instrIds = Array.from(slotInstr.children).map(c => c.id);
+            const correctInstrIds = items.filter(i => i.cat === 'instrument' && i.correct).map(i => i.id);
+            const instrCorrect = instrIds.length === 3 && instrIds.every(id => correctInstrIds.includes(id));
+
+            const tableId = slotTable.children[0]?.id;
+            const tableCorrect = tableId === 't1';
+            
+            const reasonId = slotReason.children[0]?.id;
+            const reasonCorrect = reasonId === 'r1';
+
+            slotInstr.className = `slot rounded-xl ${instrCorrect ? 'correct' : 'wrong-item'}`;
+            slotTable.className = `slot rounded-xl ${tableCorrect ? 'correct' : 'wrong-item'}`;
+            slotReason.className = `slot rounded-xl ${reasonCorrect ? 'correct' : 'wrong-item'}`;
+
+            if (instrCorrect && tableCorrect && reasonCorrect) {
+                feedback.innerText = "Ідеально! План складено вірно. ✅";
+                feedback.className = "text-green-600 font-bold animate-bounce";
+                playSfx('success');
+            } else {
+                feedback.innerText = "Є помилки. Спробуй ще раз!";
+                feedback.className = "text-red-600 font-bold";
+                playSfx('error');
+            }
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', () => location.reload());
+        
+        window.onload = init;
+    </script>
+</body>
+</html>
