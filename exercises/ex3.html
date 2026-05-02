@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Фізичне лото: Теплові явища</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            user-select: none;
+            touch-action: manipulation;
+            position: relative;
+        }
+        .card:active {
+            transform: scale(0.95);
+        }
+        .card.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+            transform: translateY(-5px);
+            z-index: 20;
+        }
+        .card.matched {
+            border-color: #22c55e;
+            background-color: #f0fdf4;
+            color: #166534;
+            z-index: 30;
+            pointer-events: none;
+        }
+        .card.wrong {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+            animation: shake 0.4s linear;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        
+        .card.disappearing {
+            transform: scale(0);
+            opacity: 0;
+        }
+
+        sub {
+            font-size: 0.6em;
+            vertical-align: sub;
+            line-height: 0;
+            font-style: normal;
+        }
+
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #1e293b;
+            color: white;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (orientation: portrait) {
+            #orientation-warning {
+                display: flex;
+            }
+        }
+
+        /* Контейнер для ефекту склеювання */
+        .match-animation-container {
+            position: absolute;
+            pointer-events: none;
+            inset: 0;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans p-4 overflow-x-hidden">
+
+    <!-- Orientation Warning -->
+    <div id="orientation-warning">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h6" />
+        </svg>
+        <h2 class="text-xl font-bold">Будь ласка, поверніть пристрій</h2>
+        <p class="mt-2 text-sm">В альбомній орієнтації грати набагато зручніше!</p>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">Фізичне лото</h1>
+            <p class="text-slate-600 italic">З'єднай пару, щоб вона "склеїлась" та зникла</p>
+        </header>
+
+        <div id="game-board" class="grid grid-cols-3 md:grid-cols-4 gap-3 md:gap-4 min-h-[300px]">
+            <!-- Картки генеруються скриптом -->
+        </div>
+
+        <div id="win-message" class="hidden mt-8 text-center animate-bounce">
+            <h2 class="text-3xl font-black text-green-600 uppercase tracking-widest">Чудова робота! 🏆</h2>
+            <p class="text-slate-600 mt-2">Ви знаєте всі теплові величини!</p>
+        </div>
+
+        <div class="mt-8 flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <div id="stats" class="text-slate-700 font-medium">
+                Залишилось пар: <span id="match-count" class="text-blue-600 font-bold">6</span>
+            </div>
+            <button id="reset-btn" class="px-6 py-2 bg-slate-800 text-white rounded-lg font-bold hover:bg-slate-700 transition shadow-lg active:bg-slate-900">
+                Скинути гру
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'success') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.1); // C6
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            }
+        }
+
+        const simpleData = [
+            { id: 1, name: "Питома теплота плавлення", symbol: "λ<sub>пл</sub>" },
+            { id: 2, name: "Питома теплота кристалізації", symbol: "λ<sub>кр</sub>" },
+            { id: 3, name: "Питома теплоємність (тверде тіло)", symbol: "c<sub>тв</sub>" },
+            { id: 4, name: "Питома теплоємність (рідина)", symbol: "c<sub>рід</sub>" },
+            { id: 5, name: "Питома теплота пароутворення", symbol: "r<sub>вип</sub>" },
+            { id: 6, name: "Питома теплота конденсації", symbol: "r<sub>конд</sub>" }
+        ];
+
+        let cards = [];
+        simpleData.forEach(item => {
+            cards.push({ id: item.id, content: item.name, type: 'name' });
+            cards.push({ id: item.id, content: item.symbol, type: 'symbol' });
+        });
+
+        let selectedCards = [];
+        let remainingPairs = 6;
+        const board = document.getElementById('game-board');
+        const matchDisplay = document.getElementById('match-count');
+        const winMessage = document.getElementById('win-message');
+
+        function initGame() {
+            board.innerHTML = '';
+            remainingPairs = 6;
+            selectedCards = [];
+            matchDisplay.innerText = remainingPairs;
+            winMessage.classList.add('hidden');
+            
+            const shuffled = [...cards].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach((cardData, index) => {
+                const card = document.createElement('div');
+                card.className = 'card bg-white border-2 border-slate-200 rounded-xl p-3 md:p-6 flex items-center justify-center text-center shadow-sm h-24 md:h-32 font-medium text-sm md:text-base leading-tight';
+                
+                if (cardData.type === 'symbol') {
+                    card.innerHTML = `<span class="text-3xl font-serif italic">${cardData.content}</span>`;
+                } else {
+                    card.innerText = cardData.content;
+                }
+
+                card.dataset.id = cardData.id;
+                card.addEventListener('click', () => handleCardClick(card));
+                board.appendChild(card);
+            });
+        }
+
+        function handleCardClick(card) {
+            // Ініціалізація аудіо при першому кліку (вимога браузерів)
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            if (card.classList.contains('matched') || selectedCards.includes(card)) return;
+
+            card.classList.add('selected');
+            selectedCards.push(card);
+
+            if (selectedCards.length === 2) {
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = selectedCards;
+            
+            if (card1.dataset.id === card2.dataset.id) {
+                // ПРАВИЛЬНО
+                playSound('success');
+                
+                // Ефект зближення перед зникненням
+                const rect1 = card1.getBoundingClientRect();
+                const rect2 = card2.getBoundingClientRect();
+                const midX = (rect1.left + rect2.left) / 2;
+                const midY = (rect1.top + rect2.top) / 2;
+
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+
+                setTimeout(() => {
+                    // Анімація склеювання до центру між ними
+                    card1.style.transform = `translate(${midX - rect1.left}px, ${midY - rect1.top}px) scale(1.1)`;
+                    card2.style.transform = `translate(${midX - rect2.left}px, ${midY - rect2.top}px) scale(1.1)`;
+                    
+                    setTimeout(() => {
+                        card1.classList.add('disappearing');
+                        card2.classList.add('disappearing');
+                        
+                        setTimeout(() => {
+                            card1.style.visibility = 'hidden';
+                            card2.style.visibility = 'hidden';
+                            remainingPairs--;
+                            matchDisplay.innerText = remainingPairs;
+                            
+                            if (remainingPairs === 0) {
+                                winMessage.classList.remove('hidden');
+                            }
+                        }, 400);
+                    }, 300);
+                }, 100);
+
+                selectedCards = [];
+            } else {
+                // ПОМИЛКА
+                playSound('error');
+                setTimeout(() => {
+                    card1.classList.add('wrong');
+                    card2.classList.add('wrong');
+                    
+                    setTimeout(() => {
+                        card1.classList.remove('selected', 'wrong');
+                        card2.classList.remove('selected', 'wrong');
+                        selectedCards = [];
+                    }, 400);
+                }, 300);
+            }
+        }
+
+        document.getElementById('reset-btn').addEventListener('click', initGame);
+
+        initGame();
+    </script>
+</body>
+</html>
