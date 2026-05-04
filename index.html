@@ -48,23 +48,26 @@
         <!-- Exercise List -->
         <div id="exercise-list" class="grid grid-cols-1 gap-3">
             <script>
+                // Оновлений масив вправ: всі 10 тепер активні
                 const exercises = [
-                    { id: 1, title: "Вправа 1", color: "blue", icon: "1" },
-                    { id: 2, title: "Вправа 2", color: "green", icon: "2" },
-                    { id: 3, title: "Вправа 3", color: "purple", icon: "3" },
-                    { id: 4, title: "Вправа 4", color: "orange", icon: "4" },
-                    { id: 5, title: "Вправа 5", color: "red", icon: "5" },
-                    { id: 6, title: "Вправа 6", color: "teal", icon: "6" },
-                    { id: 7, title: "Вправа 7", color: "indigo", icon: "7" },
-                    { id: 8, title: "Вправа 8", color: "pink", icon: "8" },
-                    { id: 9, title: "Вправа 9", color: "amber", icon: "9" },
-                    { id: 10, title: "Вправа 10", color: "slate", icon: "10" }
+                    { id: 1, title: "Вправа 1", color: "blue" },
+                    { id: 2, title: "Вправа 2", color: "green" },
+                    { id: 3, title: "Вправа 3", color: "purple" },
+                    { id: 4, title: "Вправа 4", color: "orange" },
+                    { id: 5, title: "Вправа 5", color: "red" },
+                    { id: 6, title: "Вправа 6", color: "teal" },
+                    { id: 7, title: "Вправа 7", color: "indigo" },
+                    { id: 8, title: "Вправа 8", color: "pink" },
+                    { id: 9, title: "Вправа 9", color: "amber" },
+                    { id: 10, title: "Вправа 10", color: "slate" }
                 ];
 
                 const listContainer = document.getElementById('exercise-list');
 
                 exercises.forEach(ex => {
-                    const isActive = ex.id <= 5;
+                    // Змінено умову: тепер усі вправи (1-10) активні
+                    const isActive = ex.id <= 10; 
+                    
                     const cardClass = isActive 
                         ? "exercise-card active-card flex items-center p-5 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-indigo-200" 
                         : "exercise-card locked flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-200 shadow-none";
@@ -73,6 +76,7 @@
                     const icon = isActive 
                         ? '<i class="fa-solid fa-chevron-right text-sm"></i>' 
                         : '<i class="fa-solid fa-lock text-sm"></i>';
+                    
                     const badgeClass = isActive
                         ? "w-10 h-10 flex-shrink-0 rounded-full bg-indigo-50 border-2 border-indigo-100 flex items-center justify-center text-indigo-600 font-bold mr-4"
                         : "w-10 h-10 flex-shrink-0 rounded-full bg-gray-200 border-2 border-gray-300 flex items-center justify-center text-gray-500 font-bold mr-4";
@@ -102,7 +106,7 @@
                 <i class="fa-solid fa-circle-info text-blue-500 mr-2"></i> Важливо знати
             </h4>
             <p class="text-xs text-gray-500 mb-4 leading-relaxed">
-                Наразі вам доступні перші 5 вправ. Будь ласка, дотримуйтесь інструкцій нижче для звітності.
+                Наразі вам доступні всі 10 вправ. Будь ласка, дотримуйтесь інструкцій нижче для звітності.
             </p>
             <ul class="text-sm text-gray-600 space-y-4">
                 <li class="flex items-start">
