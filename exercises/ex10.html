@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажер: Логіка закону Ома</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .correct { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #166534; }
+        .incorrect { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        
+        @media screen and (orientation: portrait) {
+            .landscape-warning { display: flex; }
+        }
+        @media screen and (orientation: landscape) {
+            .landscape-warning { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-zinc-100 min-h-screen font-sans text-zinc-900 leading-tight">
+
+    <!-- Попередження для мобільних пристроїв -->
+    <div class="landscape-warning fixed inset-0 z-50 bg-zinc-900 text-white flex-col items-center justify-center p-6 text-center md:hidden">
+        <div class="text-5xl mb-4">📱🔄</div>
+        <h2 class="text-xl font-bold mb-2">Будь ласка, поверніть телефон</h2>
+        <p>Для зручного читання довгих варіантів відповідей використовуйте горизонтальний режим.</p>
+        <button onclick="this.parentElement.style.display='none'" class="mt-6 bg-white text-zinc-900 px-4 py-2 rounded-lg font-bold">Зрозумів</button>
+    </div>
+
+    <div class="max-w-3xl mx-auto bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        <!-- Header -->
+        <div class="bg-emerald-600 p-6 text-white text-center shadow-lg">
+            <h1 class="text-xl font-black uppercase tracking-wider">Закон Ома: Логічні зв'язки</h1>
+            <p class="text-xs opacity-90 mt-1 font-medium">Досліджуємо залежність I від U та R</p>
+        </div>
+
+        <!-- Theory Box -->
+        <div class="p-4 bg-emerald-50 border-b border-emerald-100">
+            <div class="flex items-center justify-center space-x-4 text-emerald-800 font-bold text-lg">
+                <span class="bg-white px-3 py-1 rounded-lg shadow-sm border border-emerald-200">I = U / R</span>
+            </div>
+            <p class="text-center text-[10px] text-emerald-600 mt-2 uppercase font-bold tracking-widest">Основна формула для аналізу</p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-zinc-200 h-1.5">
+            <div id="progress" class="bg-emerald-500 h-full transition-all duration-700" style="width: 0%"></div>
+        </div>
+
+        <!-- Exercise Content -->
+        <div id="exercise-container" class="p-6 flex-grow flex flex-col justify-center">
+            <div id="step-content" class="fade-in">
+                <!-- Content injected here -->
+            </div>
+            
+            <div id="feedback" class="mt-6 hidden p-4 rounded-2xl text-center text-sm font-bold border-2 shadow-sm"></div>
+            
+            <div class="mt-8 flex justify-between items-center border-t border-zinc-100 pt-6">
+                <span id="step-indicator" class="text-xs font-black text-zinc-400 uppercase tracking-widest">Питання 1</span>
+                <button id="next-btn" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-4 rounded-2xl transition-all font-bold shadow-lg uppercase text-xs tracking-widest active:scale-95">
+                    Далі
+                </button>
+            </div>
+        </div>
+
+        <!-- Final Screen -->
+        <div id="final-screen" class="hidden p-10 text-center fade-in my-auto">
+            <div class="text-7xl mb-6">⚡</div>
+            <h2 class="text-3xl font-black text-zinc-800 mb-3">Ви — майстер кола!</h2>
+            <p class="text-zinc-500 mb-8 text-sm leading-relaxed">Ви бездоганно розумієте, як маніпулювати силою струму, змінюючи напругу та опір.</p>
+            <button onclick="location.reload()" class="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black shadow-xl active:scale-95 transition-transform uppercase tracking-widest">Почати спочатку</button>
+        </div>
+    </div>
+
+    <script>
+        const steps = [
+            {
+                title: "Ситуація 1: Зміна напруги",
+                question: "Як зміниться сила струму в ділянці кола, якщо напругу збільшити у 3 рази (при сталому опорі)?",
+                options: [
+                    "Збільшиться у 3 рази",
+                    "Зменшиться у 3 рази",
+                    "Не зміниться",
+                    "Збільшиться у 9 разів"
+                ],
+                correct: 0,
+                hint: "Сила струму прямо пропорційна напрузі (I ~ U). У скільки разів більша напруга — у стільки ж разів більший струм."
+            },
+            {
+                title: "Ситуація 2: Зміна опору",
+                question: "Як зміниться сила струму, якщо опір провідника зменшити у 2 рази (при сталій напрузі)?",
+                options: [
+                    "Зменшиться у 2 рази",
+                    "Збільшиться у 2 рази",
+                    "Зменшиться у 4 рази",
+                    "Не зміниться"
+                ],
+                correct: 1,
+                hint: "Сила струму обернено пропорційна опору (I ~ 1/R). Чим менший опір — тим легше струму текти."
+            },
+            {
+                title: "Ситуація 3: Подвійна зміна",
+                question: "Як зміниться сила струму, якщо напругу збільшити у 2 рази, а опір зменшити у 2 рази?",
+                options: [
+                    "Збільшиться у 2 рази",
+                    "Зменшиться у 4 рази",
+                    "Збільшиться у 4 рази",
+                    "Залишиться незмінною"
+                ],
+                correct: 2,
+                hint: "Верхня частина формули (U) зростає у 2 рази, а нижня (R) зменшується у 2 рази. 2 / (1/2) = 4."
+            },
+            {
+                title: "Ситуація 4: Компенсація",
+                question: "Щоб сила струму в колі не змінилася при збільшенні напруги в 5 разів, опір потрібно...",
+                options: [
+                    "Зменшити в 5 разів",
+                    "Збільшити в 5 разів",
+                    "Залишити таким самим",
+                    "Збільшити в 25 разів"
+                ],
+                correct: 1,
+                hint: "Якщо чисельник збільшився, знаменник має збільшитися так само, щоб дріб залишився незмінним."
+            },
+            {
+                title: "Ситуація 5: Опір та Напруга",
+                question: "Як зміниться напруга на ділянці кола, якщо при незмінній силі струму ми збільшимо опір у 4 рази?",
+                options: [
+                    "Зменшиться у 4 рази",
+                    "Збільшиться у 4 рази",
+                    "Збільшиться у 2 рази",
+                    "Не зміниться"
+                ],
+                correct: 1,
+                hint: "З формули U = I * R видно, що при сталому струмі напруга прямо пропорційна опору."
+            }
+        ];
+
+        let currentStep = 0;
+        const stepContent = document.getElementById('step-content');
+        const feedback = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const progress = document.getElementById('progress');
+        const stepIndicator = document.getElementById('step-indicator');
+        const exerciseContainer = document.getElementById('exercise-container');
+        const finalScreen = document.getElementById('final-screen');
+
+        function renderStep() {
+            const step = steps[currentStep];
+            stepContent.innerHTML = `
+                <h3 class="text-xs font-black text-emerald-600 mb-2 uppercase tracking-widest">${step.title}</h3>
+                <p class="text-lg font-bold text-zinc-800 mb-8 leading-tight">${step.question}</p>
+                <div class="space-y-3">
+                    ${step.options.map((opt, i) => `
+                        <button onclick="checkAnswer(${i})" class="option-btn w-full text-left p-5 border-2 border-zinc-100 rounded-2xl hover:border-emerald-300 active:bg-emerald-50 transition-all text-sm font-bold shadow-sm bg-zinc-50">
+                            ${opt}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+            
+            feedback.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            stepIndicator.innerText = `Запитання ${currentStep + 1} з ${steps.length}`;
+            progress.style.width = `${((currentStep) / steps.length) * 100}%`;
+        }
+
+        window.checkAnswer = function(index) {
+            const step = steps[currentStep];
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50');
+            });
+            
+            if (index === step.correct) {
+                buttons[index].classList.remove('opacity-50');
+                buttons[index].classList.add('correct');
+                feedback.innerHTML = "✨ ВЕРНО! Ви точно відчуваєте залежності.";
+                feedback.className = "mt-6 p-4 rounded-2xl text-center text-sm font-bold border-2 bg-green-50 border-green-200 text-green-700 shadow-sm";
+            } else {
+                buttons[index].classList.remove('opacity-50');
+                buttons[index].classList.add('incorrect');
+                buttons[step.correct].classList.remove('opacity-50');
+                buttons[step.correct].classList.add('correct');
+                feedback.innerHTML = `💡 ПІДКАЗКА: ${step.hint}`;
+                feedback.className = "mt-6 p-4 rounded-2xl text-center text-sm font-bold border-2 bg-red-50 border-red-200 text-red-700 shadow-sm";
+            }
+            feedback.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+        };
+
+        nextBtn.onclick = () => {
+            currentStep++;
+            if (currentStep < steps.length) {
+                renderStep();
+                window.scrollTo(0,0);
+            } else {
+                exerciseContainer.classList.add('hidden');
+                document.querySelector('.bg-emerald-50').classList.add('hidden');
+                finalScreen.classList.remove('hidden');
+                stepIndicator.classList.add('hidden');
+                progress.style.width = "100%";
+            }
+        };
+
+        renderStep();
+    </script>
+</body>
+</html>
