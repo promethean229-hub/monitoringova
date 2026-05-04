@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Визначення опору за графіком</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            touch-action: pan-y;
+            overflow-x: hidden;
+        }
+        .drop-zone {
+            transition: all 0.3s ease;
+            border: 2px dashed #cbd5e1;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 10px;
+            padding: 4px;
+        }
+        .drop-zone.active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: scale(1.05);
+        }
+        .draggable {
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+            z-index: 50;
+        }
+        .draggable:active {
+            cursor: grabbing;
+        }
+        .correct {
+            background-color: #dcfce7 !important;
+            border-color: #22c55e !important;
+            color: #166534 !important;
+        }
+        .wrong {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+        }
+        
+        /* Попередження про орієнтацію */
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0f172a;
+            color: white;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Показуємо попередження лише у вертикальному режимі на мобільних */
+        @media screen and (max-width: 900px) and (orientation: portrait) {
+            #orientation-warning {
+                display: flex;
+            }
+            #main-app-container {
+                display: none;
+            }
+        }
+
+        .dragging-touch {
+            pointer-events: none !important;
+            opacity: 0.9;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans">
+
+    <!-- Блок попередження -->
+    <div id="orientation-warning">
+        <div class="animate-bounce mb-6">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" transform="rotate(90 12 12)"></rect>
+                <line x1="12" y1="15" x2="12" y2="15"></line>
+            </svg>
+        </div>
+        <h2 class="text-2xl font-bold mb-2">Поверніть пристрій</h2>
+        <p class="text-slate-400 max-w-xs">Ця вправа розроблена для горизонтального режиму. Будь ласка, увімкніть автоповорот та поверніть телефон.</p>
+    </div>
+
+    <!-- Основний контент -->
+    <div id="main-app-container" class="max-w-5xl mx-auto bg-white min-h-screen shadow-2xl flex flex-col p-4">
+        <header class="text-center mb-2">
+            <h1 class="text-lg md:text-2xl font-bold text-slate-800">Порівняння опору за графіком ВАХ</h1>
+        </header>
+
+        <div class="flex-grow flex flex-col md:flex-row gap-4 items-stretch justify-center">
+            <!-- Область графіка -->
+            <div class="relative flex-grow bg-slate-50 border rounded-xl overflow-hidden shadow-inner flex items-center justify-center p-2">
+                <div class="relative inline-block">
+                    <svg width="460" height="260" viewBox="0 0 460 260" class="max-w-full h-auto" id="main-svg">
+                        <!-- Сітка -->
+                        <g stroke="#cbd5e1" stroke-width="0.5" stroke-dasharray="2,2">
+                            <line x1="40" y1="180" x2="440" y2="180" />
+                            <line x1="40" y1="130" x2="440" y2="130" />
+                            <line x1="40" y1="80" x2="440" y2="80" />
+                            <line x1="40" y1="30" x2="440" y2="30" />
+                            <line x1="140" y1="10" x2="140" y2="230" />
+                            <line x1="240" y1="10" x2="240" y2="230" />
+                            <line x1="340" y1="10" x2="340" y2="230" />
+                            <line x1="440" y1="10" x2="440" y2="230" />
+                        </g>
+
+                        <!-- Осі -->
+                        <line x1="40" y1="230" x2="450" y2="230" stroke="#1e293b" stroke-width="2" />
+                        <line x1="40" y1="230" x2="40" y2="10" stroke="#1e293b" stroke-width="2" />
+                        <text x="440" y="250" font-size="12" font-weight="bold" fill="#475569">U, В</text>
+                        <text x="5" y="20" font-size="12" font-weight="bold" fill="#475569">I, А</text>
+
+                        <!-- Графіки -->
+                        <!-- Провідник 1 (Крутий) -->
+                        <line x1="40" y1="230" x2="240" y2="30" stroke="#ef4444" stroke-width="4" stroke-linecap="round" />
+                        <text x="230" y="25" fill="#ef4444" font-weight="bold">№1</text>
+                        
+                        <!-- Провідник 2 (Пологий) -->
+                        <line x1="40" y1="230" x2="440" y2="130" stroke="#10b981" stroke-width="4" stroke-linecap="round" />
+                        <text x="430" y="120" fill="#10b981" font-weight="bold">№2</text>
+
+                        <!-- Значення на осях -->
+                        <text x="235" y="245" font-size="10">2</text>
+                        <text x="435" y="245" font-size="10">4</text>
+                        <text x="25" y="135" font-size="10">1</text>
+                        <text x="25" y="35" font-size="10">2</text>
+                    </svg>
+
+                    <!-- Зони для карток (позиціоновані поверх SVG) -->
+                    <div id="zone-min" data-answer="min" class="drop-zone absolute rounded-lg border-blue-200" style="left: 70px; top: 15px; width: 130px; height: 50px;"></div>
+                    <div id="zone-max" data-answer="max" class="drop-zone absolute rounded-lg border-blue-200" style="left: 280px; top: 140px; width: 130px; height: 50px;"></div>
+                </div>
+            </div>
+
+            <!-- Бокова панель: Картки та Кнопки -->
+            <div class="w-full md:w-64 flex flex-col gap-4">
+                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <p class="text-[11px] text-blue-800">
+                        <b>Завдання:</b> Визначте, який провідник має більший опір, а який — менший. Перетягніть картки на відповідні графіки.
+                    </p>
+                </div>
+
+                <div id="cards-container" class="flex flex-col gap-3 flex-grow">
+                    <!-- Картки генеруються JS -->
+                </div>
+
+                <div class="mt-auto space-y-2">
+                    <div id="feedback" class="text-center font-bold text-sm min-h-[1.5em]"></div>
+                    <div class="flex gap-2">
+                        <button id="reset-btn" class="flex-1 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold active:scale-95 transition">Скинути</button>
+                        <button id="check-btn" class="flex-[2] py-2 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-lg active:scale-95 transition">Перевірити</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cardsData = [
+            { id: "min", text: "Найменший опір (№1)" },
+            { id: "max", text: "Найбільший опір (№2)" }
+        ];
+
+        const cardsContainer = document.getElementById('cards-container');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const checkBtn = document.getElementById('check-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const feedback = document.getElementById('feedback');
+
+        let draggedItem = null;
+
+        function init() {
+            const shuffled = [...cardsData].sort(() => Math.random() - 0.5);
+            cardsContainer.innerHTML = '';
+            shuffled.forEach(item => {
+                const card = createCard(item);
+                cardsContainer.appendChild(card);
+            });
+
+            dropZones.forEach(zone => {
+                zone.innerHTML = '<span class="opacity-40 italic">Сюди...</span>';
+                zone.classList.remove('active', 'correct', 'wrong');
+            });
+            feedback.innerText = '';
+        }
+
+        function createCard(item) {
+            const card = document.createElement('div');
+            card.className = 'draggable bg-white border-2 border-slate-300 p-3 rounded-xl shadow-sm text-xs text-center font-bold transition-all';
+            card.innerText = item.text;
+            card.dataset.id = item.id;
+            card.draggable = true;
+
+            // Desktop Events
+            card.addEventListener('dragstart', (e) => {
+                draggedItem = card;
+                setTimeout(() => card.classList.add('opacity-0'), 0);
+            });
+            card.addEventListener('dragend', () => {
+                card.classList.remove('opacity-0');
+                draggedItem = null;
+            });
+
+            // Touch Events
+            card.addEventListener('touchstart', handleTouchStart, {passive: false});
+            card.addEventListener('touchmove', handleTouchMove, {passive: false});
+            card.addEventListener('touchend', handleTouchEnd);
+
+            return card;
+        }
+
+        // Drop Logic (Desktop)
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('active'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('active'));
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('active');
+                if (draggedItem) placeCard(zone, draggedItem);
+            });
+        });
+
+        function placeCard(zone, card) {
+            // Якщо картка вже була в зоні, очищуємо попередню
+            if (card.parentElement.classList.contains('drop-zone')) {
+                card.parentElement.innerHTML = '<span class="opacity-40 italic">Сюди...</span>';
+            }
+
+            zone.innerHTML = '';
+            card.style.position = 'static';
+            card.style.width = '100%';
+            card.style.height = '100%';
+            card.className = 'draggable bg-white border-2 border-blue-400 rounded-lg text-[10px] w-full h-full flex items-center justify-center text-center font-bold shadow-md';
+            zone.appendChild(card);
+        }
+
+        // Touch Interaction Logic
+        let currentTouchCard = null;
+        let startX, startY;
+
+        function handleTouchStart(e) {
+            currentTouchCard = e.target.closest('.draggable');
+            if (!currentTouchCard) return;
+            
+            const touch = e.touches[0];
+            const rect = currentTouchCard.getBoundingClientRect();
+            
+            startX = touch.clientX - rect.left;
+            startY = touch.clientY - rect.top;
+
+            currentTouchCard.style.width = rect.width + 'px';
+            currentTouchCard.style.height = rect.height + 'px';
+            currentTouchCard.style.position = 'fixed';
+            currentTouchCard.style.zIndex = '1000';
+            currentTouchCard.classList.add('dragging-touch');
+            
+            moveAt(touch.clientX, touch.clientY);
+        }
+
+        function handleTouchMove(e) {
+            if (!currentTouchCard) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            moveAt(touch.clientX, touch.clientY);
+
+            currentTouchCard.style.visibility = 'hidden';
+            let elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            currentTouchCard.style.visibility = 'visible';
+
+            if (!elemBelow) return;
+            let zone = elemBelow.closest('.drop-zone');
+            
+            dropZones.forEach(z => z.classList.remove('active'));
+            if (zone) zone.classList.add('active');
+        }
+
+        function handleTouchEnd(e) {
+            if (!currentTouchCard) return;
+            
+            const touch = e.changedTouches[0];
+            currentTouchCard.style.visibility = 'hidden';
+            let elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            currentTouchCard.style.visibility = 'visible';
+
+            let zone = elemBelow ? elemBelow.closest('.drop-zone') : null;
+
+            if (zone) {
+                placeCard(zone, currentTouchCard);
+            } else {
+                currentTouchCard.style.position = 'static';
+                currentTouchCard.style.width = 'auto';
+                currentTouchCard.style.height = 'auto';
+                currentTouchCard.className = 'draggable bg-white border-2 border-slate-300 p-3 rounded-xl shadow-sm text-xs text-center font-bold';
+                cardsContainer.appendChild(currentTouchCard);
+            }
+
+            dropZones.forEach(z => z.classList.remove('active'));
+            currentTouchCard.classList.remove('dragging-touch');
+            currentTouchCard = null;
+        }
+
+        function moveAt(pageX, pageY) {
+            currentTouchCard.style.left = pageX - startX + 'px';
+            currentTouchCard.style.top = pageY - startY + 'px';
+        }
+
+        checkBtn.addEventListener('click', () => {
+            let correctCount = 0;
+            let totalFilled = 0;
+
+            dropZones.forEach(zone => {
+                const card = zone.querySelector('.draggable');
+                if (card) {
+                    totalFilled++;
+                    if (card.dataset.id === zone.dataset.answer) {
+                        card.classList.add('correct');
+                        correctCount++;
+                    } else {
+                        card.classList.add('wrong');
+                    }
+                }
+            });
+
+            if (totalFilled < 2) {
+                feedback.innerText = "Розташуйте всі картки!";
+                feedback.className = "text-amber-600";
+            } else if (correctCount === 2) {
+                feedback.innerText = "Вірно! Чудова робота! 🎉";
+                feedback.className = "text-green-600";
+            } else {
+                feedback.innerText = "Спробуйте ще раз! Подивіться на нахил.";
+                feedback.className = "text-red-500";
+            }
+        });
+
+        resetBtn.addEventListener('click', init);
+        
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
