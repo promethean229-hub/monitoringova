@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інтерактивна задача: Плавлення</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .correct { background-color: #d1fae5 !important; border-color: #10b981 !important; color: #065f46; }
+        .incorrect { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        
+        @media screen and (orientation: portrait) {
+            .landscape-warning { display: flex; }
+        }
+        @media screen and (orientation: landscape) {
+            .landscape-warning { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans text-gray-900 leading-tight">
+
+    <!-- Попередження для мобільних пристроїв -->
+    <div class="landscape-warning fixed inset-0 z-50 bg-indigo-900 text-white flex-col items-center justify-center p-6 text-center md:hidden">
+        <div class="text-5xl mb-4">📱🔄</div>
+        <h2 class="text-xl font-bold mb-2">Будь ласка, поверніть телефон</h2>
+        <p>Для зручного розв'язання задачі та перегляду формул використовуйте горизонтальний режим.</p>
+        <button onclick="this.parentElement.style.display='none'" class="mt-6 bg-white text-indigo-900 px-4 py-2 rounded-lg font-bold shadow-lg">Зрозумів</button>
+    </div>
+
+    <div class="max-w-3xl mx-auto bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl shadow-xl overflow-hidden flex flex-col">
+        <!-- Header -->
+        <div class="bg-orange-600 p-5 text-white text-center shadow-md">
+            <h1 class="text-xl font-bold uppercase tracking-wide">Фізичний тренажер</h1>
+            <p class="text-xs opacity-80 mt-1">Теплові явища • Плавлення тіл</p>
+        </div>
+
+        <!-- Problem Statement -->
+        <div class="p-5 border-b bg-orange-50">
+            <h2 class="font-bold text-orange-800 mb-2 uppercase text-xs tracking-widest">Умова задачі:</h2>
+            <p class="text-gray-800 text-sm italic leading-snug">
+                Яка кількість теплоти <b>Q</b> потрібна, щоб розплавити <b>500 г</b> свинцю, взятого при температурі плавлення? (Питома теплота плавлення свинцю <b>&lambda; = 25 кДж/кг</b>).
+            </p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-gray-200 h-1.5">
+            <div id="progress" class="bg-green-500 h-full transition-all duration-500" style="width: 12.5%"></div>
+        </div>
+
+        <!-- Exercise Content -->
+        <div id="exercise-container" class="p-5 flex-grow">
+            <div id="step-content" class="fade-in">
+                <!-- Content injected here -->
+            </div>
+            
+            <div id="feedback" class="mt-4 hidden p-4 rounded-xl text-center text-sm font-bold border-2 animate-bounce"></div>
+            
+            <div class="mt-6 flex justify-between items-center border-t pt-4">
+                <span id="step-indicator" class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Крок 1 з 8</span>
+                <button id="next-btn" class="hidden bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-xl transition-all font-black shadow-lg uppercase text-sm">
+                    Далі
+                </button>
+            </div>
+        </div>
+
+        <!-- Final Screen -->
+        <div id="final-screen" class="hidden p-8 text-center fade-in my-auto">
+            <div class="text-6xl mb-4 text-orange-500">🔥</div>
+            <h2 class="text-2xl font-black text-gray-800 mb-2">Завдання виконано!</h2>
+            <p class="text-gray-600 mb-6 text-sm">Ви розібрали задачу на молекули. Тепер ви знаєте все про плавлення свинцю!</p>
+            <div class="bg-orange-50 border-2 border-orange-100 p-5 rounded-2xl inline-block text-left mb-6 w-full max-w-xs">
+                <p class="flex justify-between font-mono text-sm"><span>Маса (m):</span> <span class="font-bold">0,5 кг</span></p>
+                <p class="flex justify-between font-mono text-sm"><span>Теплота (Q):</span> <span class="font-bold">12,5 кДж</span></p>
+            </div>
+            <button onclick="location.reload()" class="w-full bg-orange-600 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-transform">ПОВТОРИТИ</button>
+        </div>
+    </div>
+
+    <script>
+        const steps = [
+            {
+                title: "Крок 1: Буквені позначення",
+                question: "Якою літерою позначають кількість теплоти, яку тіло отримує або віддає?",
+                options: ["m", "&lambda; (лямбда)", "Q", "T"],
+                correct: 2,
+                hint: "Q — це кількість теплоти. m — маса, &lambda; — питома теплота плавлення."
+            },
+            {
+                title: "Крок 2: Одиниці вимірювання (СІ)",
+                question: "В умові дано масу 500 г. Переведіть її в основну одиницю СІ — кілограми.",
+                options: ["50 кг", "5 кг", "0,5 кг", "0,05 кг"],
+                correct: 2,
+                hint: "В 1 кілограмі 1000 грамів. Поділіть 500 на 1000."
+            },
+            {
+                title: "Крок 3: Робота з префіксами",
+                question: "Питома теплота плавлення &lambda; = 25 кДж/кг. Що означає префікс 'к' (кіло)?",
+                options: ["Поділити на 100", "Помножити на 10", "Помножити на 1000", "Поділити на 1000"],
+                correct: 2,
+                hint: "Кіло (к) означає тисячу. 25 кДж = 25 000 Дж."
+            },
+            {
+                title: "Крок 4: Фізичний зміст",
+                question: "Що показує величина &lambda; = 25 кДж/кг для свинцю?",
+                options: [
+                    "Температуру плавлення свинцю",
+                    "Теплоту для нагрівання 1 кг свинцю на 1 градус",
+                    "Теплоту, необхідну для плавлення 1 кг свинцю",
+                    "Час плавлення свинцю"
+                ],
+                correct: 2,
+                hint: "Питома теплота плавлення стосується саме фазового переходу 1 кг речовини."
+            },
+            {
+                title: "Крок 5: Формула процесу",
+                question: "Яку формулу використовують для обчислення теплоти при плавленні речовини?",
+                options: [
+                    "Q = c * m * &Delta;t",
+                    "Q = L * m",
+                    "Q = q * m",
+                    "Q = &lambda; * m"
+                ],
+                correct: 3,
+                hint: "&lambda; (лямбда) використовується для плавлення, L — для пароутворення, q — для згоряння."
+            },
+            {
+                title: "Крок 6: Перевірка розмірності",
+                question: "Оберіть правильний запис перевірки одиниць вимірювання теплоти Q в цій задачі.",
+                options: [
+                    "[Q] = кг * (Дж/кг) = Дж",
+                    "[Q] = кг / (Дж/кг) = кг²/Дж",
+                    "[Q] = кг * градус",
+                    "[Q] = кДж * кг"
+                ],
+                correct: 0,
+                hint: "Кілограми в чисельнику та знаменнику мають скоротитися."
+            },
+            {
+                title: "Крок 7: Розрахунок результату",
+                question: "Обчисліть: Q = 25 кДж/кг * 0,5 кг. Скільки це буде?",
+                options: ["50 кДж", "125 кДж", "12,5 кДж", "5 кДж"],
+                correct: 2,
+                hint: "Множення на 0,5 — це те саме, що ділення навпіл."
+            },
+            {
+                title: "Крок 8: Умови процесу",
+                question: "Чи буде свинець плавитися, якщо його температура нижча за температуру плавлення, але ми надаємо йому теплоту?",
+                options: [
+                    "Так, він почне плавитися відразу",
+                    "Ні, спочатку його треба нагріти до температури плавлення",
+                    "Свинець плавиться при будь-якій температурі"
+                ],
+                correct: 1,
+                hint: "Тіло починає плавитися лише тоді, коли досягне своєї температури плавлення."
+            }
+        ];
+
+        let currentStep = 0;
+        const stepContent = document.getElementById('step-content');
+        const feedback = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const progress = document.getElementById('progress');
+        const stepIndicator = document.getElementById('step-indicator');
+        const exerciseContainer = document.getElementById('exercise-container');
+        const finalScreen = document.getElementById('final-screen');
+
+        function renderStep() {
+            const step = steps[currentStep];
+            stepContent.innerHTML = `
+                <h3 class="text-xs font-bold text-orange-600 mb-1 uppercase tracking-widest">${step.title}</h3>
+                <p class="text-base font-bold text-gray-800 mb-5 leading-tight">${step.question}</p>
+                <div class="grid gap-3">
+                    ${step.options.map((opt, i) => `
+                        <button onclick="checkAnswer(${i})" class="option-btn text-left p-4 border-2 border-gray-200 rounded-2xl hover:border-orange-400 active:bg-orange-50 transition-all text-sm font-semibold shadow-sm bg-white">
+                            ${opt}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+            
+            feedback.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            stepIndicator.innerText = `Крок ${currentStep + 1} з ${steps.length}`;
+            progress.style.width = `${((currentStep + 1) / steps.length) * 100}%`;
+        }
+
+        window.checkAnswer = function(index) {
+            const step = steps[currentStep];
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.replace('hover:border-orange-400', 'border-gray-100');
+            });
+            
+            if (index === step.correct) {
+                buttons[index].classList.add('correct');
+                feedback.innerHTML = "🎯 ВІРНО!";
+                feedback.className = "mt-4 p-4 rounded-xl text-center text-sm font-bold border-2 bg-green-50 border-green-200 text-green-700";
+            } else {
+                buttons[index].classList.add('incorrect');
+                buttons[step.correct].classList.add('correct');
+                feedback.innerHTML = `💡 ПІДКАЗКА: ${step.hint}`;
+                feedback.className = "mt-4 p-4 rounded-xl text-center text-sm font-bold border-2 bg-red-50 border-red-200 text-red-700";
+            }
+            feedback.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+        };
+
+        nextBtn.onclick = () => {
+            currentStep++;
+            if (currentStep < steps.length) {
+                renderStep();
+                window.scrollTo(0,0);
+            } else {
+                exerciseContainer.classList.add('hidden');
+                document.querySelector('.bg-orange-50').classList.add('hidden');
+                finalScreen.classList.remove('hidden');
+                stepIndicator.classList.add('hidden');
+                progress.style.width = "100%";
+            }
+        };
+
+        renderStep();
+    </script>
+</body>
+</html>
