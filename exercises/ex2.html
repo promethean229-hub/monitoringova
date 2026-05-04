@@ -5,42 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Аналіз графіка теплових процесів</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .drop-zone {
-            transition: all 0.3s ease;
-            border: 2px dashed #cbd5e1;
-            background-color: rgba(255, 255, 255, 0.8);
-            z-index: 10;
+        body {
+            background-color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+            touch-action: manipulation;
         }
-        .drop-zone.active {
+        .drop-zone {
+            transition: all 0.2s ease;
+            border: 2px dashed #cbd5e1;
+            background-color: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.1;
+            font-weight: bold;
+            color: #94a3b8;
+            z-index: 20;
+        }
+        .drop-zone.active-target {
             border-color: #3b82f6;
             background-color: #eff6ff;
-            transform: scale(1.05);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
         }
-        .draggable {
-            cursor: grab;
+        .drop-zone.occupied {
+            background-color: white;
+            border-style: solid;
+            border-color: #3b82f6;
+            color: #1e293b;
+            font-size: 9px;
+            padding: 2px;
+        }
+        .selectable-card {
+            cursor: pointer;
+            transition: all 0.2s ease;
             user-select: none;
-            touch-action: none; /* Запобігає скролу під час перетягування */
-            z-index: 50;
         }
-        .draggable:active {
-            cursor: grabbing;
+        .selectable-card.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
         }
-        .correct {
+        .correct-zone {
             background-color: #dcfce7 !important;
             border-color: #22c55e !important;
             color: #166534 !important;
         }
-        .wrong {
+        .wrong-zone {
             background-color: #fee2e2 !important;
             border-color: #ef4444 !important;
+            color: #991b1b !important;
         }
         
         #orientation-warning {
             display: none;
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #1e293b;
+            inset: 0;
+            background: #0f172a;
             color: white;
             z-index: 9999;
             flex-direction: column;
@@ -50,78 +75,82 @@
             padding: 20px;
         }
 
-        @media (orientation: portrait) {
+        @media (orientation: portrait) and (max-width: 768px) {
             #orientation-warning {
                 display: flex;
             }
         }
-
-        /* Стиль для картки, яку тягнуть пальцем */
-        .dragging-touch {
-            pointer-events: none !important;
-            opacity: 0.8;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
-        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans overflow-x-hidden">
+<body class="min-h-screen">
 
     <div id="orientation-warning">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h6" />
-        </svg>
+        <i class="fa-solid fa-mobile-screen-button text-5xl mb-4 animate-bounce"></i>
         <h2 class="text-xl font-bold">Будь ласка, поверніть пристрій</h2>
-        <p class="mt-2">Для роботи з графіком використовуйте горизонтальну орієнтацію.</p>
+        <p class="mt-2 text-slate-400">Для роботи з графіком використовуйте горизонтальну орієнтацію.</p>
     </div>
 
-    <div class="max-w-5xl mx-auto bg-white min-h-screen md:min-h-0 md:rounded-2xl shadow-xl p-4 md:p-6">
-        <header class="text-center mb-4">
-            <h1 class="text-xl md:text-2xl font-bold text-slate-800">Аналіз фазових переходів</h1>
-            <p class="text-slate-600 text-xs md:text-sm">Перетягніть процес на відповідну ділянку графіка</p>
+    <div class="max-w-5xl mx-auto bg-white min-h-screen md:min-h-0 md:my-6 md:rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+        
+        <header class="p-4 border-b bg-slate-50 flex justify-between items-center">
+            <div>
+                <h1 class="text-lg font-extrabold text-slate-800">Аналіз графіка процесів</h1>
+                <p class="text-xs text-slate-500">Натисніть на процес, потім на ділянку графіка</p>
+            </div>
+            <button id="reset-btn" class="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
         </header>
 
-        <div class="relative flex justify-center mb-6">
-            <div class="relative inline-block border rounded-lg p-2 bg-slate-50">
-                <svg width="600" height="300" viewBox="0 0 600 300" class="max-w-full h-auto" id="main-svg">
-                    <!-- Осі -->
+        <!-- Main Workspace -->
+        <div class="p-2 flex flex-col items-center">
+            
+            <!-- Graph Visualization -->
+            <div class="relative border rounded-2xl bg-slate-50 p-3 shadow-inner mb-4 select-none">
+                <svg width="580" height="280" viewBox="0 0 600 300" class="max-w-full h-auto" id="main-svg">
+                    <!-- Coordinate System -->
                     <line x1="50" y1="260" x2="560" y2="260" stroke="#334155" stroke-width="2" />
                     <line x1="50" y1="260" x2="50" y2="20" stroke="#334155" stroke-width="2" />
                     
-                    <!-- Лінії графіка -->
-                    <path d="M 50 260 L 100 90 L 180 90 L 280 40 L 400 90 L 500 90 L 550 260" fill="none" stroke="#3b82f6" stroke-width="3" />
+                    <!-- Graph Line -->
+                    <path d="M 50 260 L 100 90 L 180 90 L 280 40 L 400 90 L 500 90 L 550 260" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linejoin="round" />
                     
-                    <!-- Точки -->
-                    <g fill="#1e293b">
-                        <circle cx="100" cy="90" r="4" /><text x="95" y="80" font-weight="bold">A</text>
-                        <circle cx="180" cy="90" r="4" /><text x="175" y="80" font-weight="bold">B</text>
-                        <circle cx="280" cy="40" r="4" /><text x="275" y="30" font-weight="bold">C</text>
-                        <circle cx="400" cy="90" r="4" /><text x="395" y="80" font-weight="bold">D</text>
-                        <circle cx="500" cy="90" r="4" /><text x="495" y="80" font-weight="bold">E</text>
+                    <!-- Reference Points -->
+                    <g fill="#1e293b" font-family="sans-serif" font-size="14" font-weight="bold">
+                        <circle cx="100" cy="90" r="4" /><text x="92" y="80">A</text>
+                        <circle cx="180" cy="90" r="4" /><text x="172" y="80">B</text>
+                        <circle cx="280" cy="40" r="4" /><text x="272" y="30">C</text>
+                        <circle cx="400" cy="90" r="4" /><text x="392" y="80">D</text>
+                        <circle cx="500" cy="90" r="4" /><text x="492" y="80">E</text>
                     </g>
                 </svg>
 
-                <!-- Зони скидання -->
-                <div id="zone-1" data-id="1" class="drop-zone absolute rounded flex items-center justify-center text-[10px] text-center p-1" style="left: 55px; top: 120px; width: 50px; height: 100px;">0-A</div>
-                <div id="zone-2" data-id="2" class="drop-zone absolute rounded flex items-center justify-center text-[10px] text-center p-1" style="left: 110px; top: 60px; width: 70px; height: 35px;">A-B</div>
-                <div id="zone-3" data-id="3" class="drop-zone absolute rounded flex items-center justify-center text-[10px] text-center p-1" style="left: 195px; top: 40px; width: 70px; height: 40px;">B-C</div>
-                <div id="zone-4" data-id="4" class="drop-zone absolute rounded flex items-center justify-center text-[10px] text-center p-1" style="left: 300px; top: 40px; width: 80px; height: 40px;">C-D</div>
-                <div id="zone-5" data-id="5" class="drop-zone absolute rounded flex items-center justify-center text-[10px] text-center p-1" style="left: 410px; top: 60px; width: 80px; height: 35px;">D-E</div>
-                <div id="zone-6" data-id="6" class="drop-zone absolute rounded flex items-center justify-center text-[10px] text-center p-1" style="left: 510px; top: 110px; width: 50px; height: 110px;">E...</div>
+                <!-- Absolute Positioned Zones -->
+                <div data-zone="1" class="drop-zone absolute rounded" style="left: 55px; top: 120px; width: 50px; height: 100px;">0-A</div>
+                <div data-zone="2" class="drop-zone absolute rounded" style="left: 110px; top: 60px; width: 70px; height: 35px;">A-B</div>
+                <div data-zone="3" class="drop-zone absolute rounded" style="left: 195px; top: 40px; width: 70px; height: 40px;">B-C</div>
+                <div data-zone="4" class="drop-zone absolute rounded" style="left: 300px; top: 40px; width: 80px; height: 40px;">C-D</div>
+                <div data-zone="5" class="drop-zone absolute rounded" style="left: 410px; top: 60px; width: 80px; height: 35px;">D-E</div>
+                <div data-zone="6" class="drop-zone absolute rounded" style="left: 510px; top: 110px; width: 50px; height: 110px;">E...</div>
+            </div>
+
+            <!-- Pool of Cards -->
+            <div id="cards-pool" class="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-4xl px-2 mb-4">
+                <!-- Cards will be generated here -->
             </div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 mb-6" id="cards-container"></div>
-
-        <div class="flex justify-between items-center border-t pt-4">
-            <button id="reset-btn" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-300 transition">Очистити</button>
-            <div id="feedback" class="font-bold text-lg"></div>
-            <button id="check-btn" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium shadow-md hover:bg-blue-700 transition">Перевірити</button>
+        <!-- Feedback & Footer -->
+        <div class="mt-auto p-4 bg-slate-50 border-t flex items-center justify-between">
+            <div id="feedback-msg" class="text-sm font-bold transition-all"></div>
+            <button id="check-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95">
+                Перевірити
+            </button>
         </div>
     </div>
 
     <script>
-        const data = [
+        const initialData = [
             { id: "1", text: "Нагрівання льоду", label: "0-A" },
             { id: "2", text: "Плавлення льоду", label: "A-B" },
             { id: "3", text: "Нагрівання води", label: "B-C" },
@@ -130,185 +159,139 @@
             { id: "6", text: "Охолодження льоду", label: "E..." }
         ];
 
-        const cardsContainer = document.getElementById('cards-container');
-        const dropZones = document.querySelectorAll('.drop-zone');
+        let selectedId = null;
+        let mapping = {}; // { zoneIndex: cardId }
+
+        const cardsPool = document.getElementById('cards-pool');
+        const zones = document.querySelectorAll('.drop-zone');
         const checkBtn = document.getElementById('check-btn');
         const resetBtn = document.getElementById('reset-btn');
-        const feedback = document.getElementById('feedback');
-
-        let draggedItem = null;
+        const feedback = document.getElementById('feedback-msg');
 
         function init() {
-            const shuffled = [...data].sort(() => Math.random() - 0.5);
-            cardsContainer.innerHTML = '';
+            mapping = {};
+            selectedId = null;
+            feedback.innerText = '';
+            
+            // Generate shuffled cards
+            const shuffled = [...initialData].sort(() => Math.random() - 0.5);
+            cardsPool.innerHTML = '';
             shuffled.forEach(item => {
                 const card = document.createElement('div');
-                card.className = 'draggable bg-white border-2 border-blue-200 p-2 md:p-3 rounded-xl shadow-sm text-xs md:text-sm text-center font-semibold transition-all';
-                card.draggable = true;
+                card.className = 'selectable-card bg-white border-2 border-slate-200 p-2.5 rounded-xl text-center text-xs font-bold shadow-sm flex items-center justify-center min-h-[50px]';
                 card.innerText = item.text;
                 card.dataset.id = item.id;
-                
-                // Desktop Drag
-                card.addEventListener('dragstart', (e) => {
-                    draggedItem = card;
-                    setTimeout(() => card.classList.add('opacity-0'), 0);
-                });
-                card.addEventListener('dragend', () => {
-                    card.classList.remove('opacity-0');
-                    draggedItem = null;
-                });
-
-                // Touch Events
-                card.addEventListener('touchstart', handleTouchStart, {passive: false});
-                card.addEventListener('touchmove', handleTouchMove, {passive: false});
-                card.addEventListener('touchend', handleTouchEnd);
-
-                cardsContainer.appendChild(card);
+                card.onclick = () => handleCardSelection(item.id, card);
+                cardsPool.appendChild(card);
             });
 
-            dropZones.forEach(zone => {
-                zone.innerHTML = data.find(d => d.id === zone.dataset.id).label;
-                zone.classList.remove('active');
+            // Reset zones
+            zones.forEach(zone => {
+                const zoneId = zone.dataset.zone;
+                const originalLabel = initialData.find(d => d.id === zoneId).label;
+                zone.innerText = originalLabel;
+                zone.className = 'drop-zone absolute rounded';
+                zone.onclick = () => handleZoneClick(zoneId, zone);
             });
-            feedback.innerText = '';
         }
 
-        // Desktop Drop Logic
-        dropZones.forEach(zone => {
-            zone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                zone.classList.add('active');
-            });
-            zone.addEventListener('dragleave', () => zone.classList.remove('active'));
-            zone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                zone.classList.remove('active');
-                if (draggedItem) placeCard(zone, draggedItem);
-            });
-        });
-
-        function placeCard(zone, card) {
-            // Відновлення тексту в попередній зоні, якщо картку перемістили з однієї зони в іншу
-            if (card.parentElement.classList.contains('drop-zone')) {
-                const oldZone = card.parentElement;
-                oldZone.innerText = data.find(d => d.id === oldZone.dataset.id).label;
+        function handleCardSelection(id, element) {
+            // Toggle selection
+            if (selectedId === id) {
+                selectedId = null;
+                element.classList.remove('selected');
+                return;
             }
 
-            zone.innerHTML = '';
-            card.style.position = 'static';
-            card.style.width = '100%';
-            card.style.height = '100%';
-            card.style.zIndex = 'auto';
-            card.className = 'draggable bg-white border border-blue-400 rounded p-0.5 text-[9px] w-full h-full flex items-center justify-center text-center leading-tight';
-            zone.appendChild(card);
-        }
-
-        // Touch Handlers
-        let currentTouchCard = null;
-        let startX, startY;
-
-        function handleTouchStart(e) {
-            if (e.target.classList.contains('draggable')) {
-                currentTouchCard = e.target;
-                const touch = e.touches[0];
-                const rect = currentTouchCard.getBoundingClientRect();
-                
-                startX = touch.clientX - rect.left;
-                startY = touch.clientY - rect.top;
-
-                // Задаємо фіксовані розміри, щоб картка не "стискалася" під час відриву від сітки
-                currentTouchCard.style.width = rect.width + 'px';
-                currentTouchCard.style.height = rect.height + 'px';
-                currentTouchCard.style.position = 'fixed';
-                currentTouchCard.style.zIndex = '1000';
-                currentTouchCard.classList.add('dragging-touch');
-                
-                moveAt(touch.clientX, touch.clientY);
-            }
-        }
-
-        function handleTouchMove(e) {
-            if (!currentTouchCard) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            moveAt(touch.clientX, touch.clientY);
-
-            // Визначаємо елемент під пальцем
-            currentTouchCard.style.display = 'none'; // Тимчасово ховаємо, щоб побачити що під нею
-            let elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-            currentTouchCard.style.display = 'flex';
-
-            if (!elemBelow) return;
-            let zone = elemBelow.closest('.drop-zone');
+            selectedId = id;
+            document.querySelectorAll('.selectable-card').forEach(c => c.classList.remove('selected'));
+            element.classList.add('selected');
             
-            dropZones.forEach(z => z.classList.remove('active'));
-            if (zone) zone.classList.add('active');
+            // Highlight available zones
+            zones.forEach(z => z.classList.add('active-target'));
+            setTimeout(() => {
+                zones.forEach(z => z.classList.remove('active-target'));
+            }, 600);
         }
 
-        function handleTouchEnd(e) {
-            if (!currentTouchCard) return;
-            
-            const touch = e.changedTouches[0];
-            currentTouchCard.style.display = 'none';
-            let elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-            currentTouchCard.style.display = 'flex';
-
-            let zone = elemBelow ? elemBelow.closest('.drop-zone') : null;
-
-            if (zone) {
-                placeCard(zone, currentTouchCard);
-            } else {
-                // Повернення картки в загальний контейнер
-                currentTouchCard.style.position = 'static';
-                currentTouchCard.style.width = 'auto';
-                currentTouchCard.style.height = 'auto';
-                currentTouchCard.className = 'draggable bg-white border-2 border-blue-200 p-2 md:p-3 rounded-xl shadow-sm text-xs md:text-sm text-center font-semibold';
-                cardsContainer.appendChild(currentTouchCard);
+        function handleZoneClick(zoneId, zoneElement) {
+            // Case 1: Returning a card from zone to pool
+            if (!selectedId && mapping[zoneId]) {
+                const cardId = mapping[zoneId];
+                delete mapping[zoneId];
+                updateCardVisibility(cardId, true);
+                
+                const originalLabel = initialData.find(d => d.id === zoneId).label;
+                zoneElement.innerText = originalLabel;
+                zoneElement.classList.remove('occupied', 'correct-zone', 'wrong-zone');
+                return;
             }
 
-            dropZones.forEach(z => z.classList.remove('active'));
-            currentTouchCard.classList.remove('dragging-touch');
-            currentTouchCard = null;
+            // Case 2: Placing a selected card
+            if (selectedId) {
+                // If zone occupied, return old card first
+                if (mapping[zoneId]) {
+                    updateCardVisibility(mapping[zoneId], true);
+                }
+
+                mapping[zoneId] = selectedId;
+                const cardData = initialData.find(d => d.id === selectedId);
+                
+                zoneElement.innerText = cardData.text;
+                zoneElement.classList.add('occupied');
+                zoneElement.classList.remove('correct-zone', 'wrong-zone');
+
+                updateCardVisibility(selectedId, false);
+                selectedId = null;
+                document.querySelectorAll('.selectable-card').forEach(c => c.classList.remove('selected'));
+            }
         }
 
-        function moveAt(pageX, pageY) {
-            currentTouchCard.style.left = pageX - startX + 'px';
-            currentTouchCard.style.top = pageY - startY + 'px';
+        function updateCardVisibility(id, isVisible) {
+            const card = [...document.querySelectorAll('.selectable-card')].find(c => c.dataset.id === id);
+            if (card) {
+                if (isVisible) card.classList.remove('invisible', 'pointer-events-none');
+                else card.classList.add('invisible', 'pointer-events-none');
+            }
         }
 
-        checkBtn.addEventListener('click', () => {
+        checkBtn.onclick = () => {
+            const placedCount = Object.keys(mapping).length;
+            if (placedCount === 0) {
+                feedback.innerText = "Оберіть процеси!";
+                feedback.className = "text-amber-500 font-bold";
+                return;
+            }
+
             let correct = 0;
-            let filled = 0;
-            dropZones.forEach(zone => {
-                const child = zone.querySelector('.draggable');
-                if (child) {
-                    filled++;
-                    if (child.dataset.id === zone.dataset.id) {
-                        child.classList.add('correct');
-                        child.classList.remove('wrong');
+            zones.forEach(zone => {
+                const zoneId = zone.dataset.zone;
+                const cardId = mapping[zoneId];
+
+                if (cardId) {
+                    zone.classList.remove('correct-zone', 'wrong-zone');
+                    if (cardId === zoneId) {
+                        zone.classList.add('correct-zone');
                         correct++;
                     } else {
-                        child.classList.add('wrong');
-                        child.classList.remove('correct');
+                        zone.classList.add('wrong-zone');
                     }
                 }
             });
 
-            if (filled === 0) {
-                feedback.innerText = "Спочатку виконайте завдання!";
-                feedback.className = "text-amber-500";
-            } else if (correct === data.length) {
-                feedback.innerText = "Відмінно! Все вірно 🌟";
-                feedback.className = "text-green-600";
+            if (correct === initialData.length) {
+                feedback.innerText = "Чудово! Все вірно ✨";
+                feedback.className = "text-green-600 font-bold";
             } else {
-                feedback.innerText = `Правильно: ${correct} з ${data.length}`;
-                feedback.className = "text-blue-600";
+                feedback.innerText = `Вірно: ${correct} з ${initialData.length}`;
+                feedback.className = "text-blue-600 font-bold";
             }
-        });
+        };
 
-        resetBtn.addEventListener('click', init);
+        resetBtn.onclick = init;
 
-        init();
+        // Initialize on load
+        window.onload = init;
     </script>
 </body>
 </html>
