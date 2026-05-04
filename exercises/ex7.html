@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інтерактивна задача з фізики</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .correct { background-color: #d1fae5 !important; border-color: #10b981 !important; color: #065f46; }
+        .incorrect { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
+        
+        /* Попередження про орієнтацію */
+        @media screen and (orientation: portrait) {
+            .landscape-warning { display: flex; }
+        }
+        @media screen and (orientation: landscape) {
+            .landscape-warning { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans text-gray-900 leading-tight">
+
+    <!-- Попередження для мобільних пристроїв -->
+    <div class="landscape-warning fixed inset-0 z-50 bg-blue-900 text-white flex-col items-center justify-center p-6 text-center md:hidden">
+        <div class="text-5xl mb-4">📱🔄</div>
+        <h2 class="text-xl font-bold mb-2">Будь ласка, поверніть телефон</h2>
+        <p>Для кращого відображення формул та таблиць рекомендуємо використовувати горизонтальний режим.</p>
+        <button onclick="this.parentElement.style.display='none'" class="mt-6 bg-white text-blue-900 px-4 py-2 rounded-lg font-bold">Зрозумів</button>
+    </div>
+
+    <div class="max-w-3xl mx-auto bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl shadow-xl overflow-hidden flex flex-col">
+        <!-- Header -->
+        <div class="bg-blue-700 p-5 text-white text-center shadow-md">
+            <h1 class="text-xl font-bold uppercase tracking-wide">Фізичний тренажер</h1>
+            <p class="text-xs opacity-80 mt-1">Опір провідників • Закон Ома</p>
+        </div>
+
+        <!-- Problem Statement -->
+        <div class="p-5 border-b bg-blue-50">
+            <h2 class="font-bold text-blue-800 mb-2 uppercase text-xs tracking-widest">Умова задачі:</h2>
+            <p class="text-gray-800 text-sm italic leading-snug">
+                Обчисліть опір нікелінового дроту завдовжки <b>l = 4 м</b> з площею поперечного перерізу <b>S = 0,2 мм²</b>. Яка напруга <b>U</b> на кінцях цього дроту, якщо по ньому тече струм силою <b>I = 1,5 А</b>? (Питомий опір нікеліну <b>&rho; = 0,42 Ом·мм²/м</b>).
+            </p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-gray-200 h-1.5">
+            <div id="progress" class="bg-green-500 h-full transition-all duration-500" style="width: 20%"></div>
+        </div>
+
+        <!-- Exercise Content -->
+        <div id="exercise-container" class="p-5 flex-grow">
+            <div id="step-content" class="fade-in">
+                <!-- Content injected here -->
+            </div>
+            
+            <div id="feedback" class="mt-4 hidden p-4 rounded-xl text-center text-sm font-bold border-2 animate-bounce"></div>
+            
+            <div class="mt-6 flex justify-between items-center border-t pt-4">
+                <span id="step-indicator" class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Крок 1 з 5</span>
+                <button id="next-btn" class="hidden bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl transition-all font-black shadow-lg uppercase text-sm">
+                    Далі
+                </button>
+            </div>
+        </div>
+
+        <!-- Final Screen -->
+        <div id="final-screen" class="hidden p-8 text-center fade-in my-auto">
+            <div class="text-6xl mb-4 text-yellow-500">🏆</div>
+            <h2 class="text-2xl font-black text-gray-800 mb-2">Чудова робота!</h2>
+            <p class="text-gray-600 mb-6 text-sm">Ви правильно розрахували всі параметри електричного кола.</p>
+            <div class="bg-blue-50 border-2 border-blue-100 p-5 rounded-2xl inline-block text-left mb-6 w-full max-w-xs">
+                <p class="flex justify-between font-mono"><span>Опір (R):</span> <span class="font-bold">8,4 Ом</span></p>
+                <p class="flex justify-between font-mono"><span>Напруга (U):</span> <span class="font-bold">12,6 В</span></p>
+            </div>
+            <button onclick="location.reload()" class="w-full bg-blue-700 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-transform">РОЗВ'ЯЗАТИ ЗНОВУ</button>
+        </div>
+    </div>
+
+    <script>
+        const steps = [
+            {
+                title: "Крок 1: Буквені позначення",
+                question: "Якою грецькою літерою в фізиці позначають питомий опір матеріалу?",
+                options: ["R (ер)", "&rho; (ро)", "U (у)", "S (ес)"],
+                correct: 1,
+                hint: "&rho; (ро) — це питомий опір. R — загальний опір усього провідника."
+            },
+            {
+                title: "Крок 2: Формула опору",
+                question: "Яка формула пов'язує опір провідника (R) з його довжиною (l) та площею перерізу (S)?",
+                options: [
+                    "R = U / I",
+                    "R = &rho; * l / S",
+                    "R = &rho; * S / l",
+                    "R = I * U"
+                ],
+                correct: 1,
+                hint: "Опір тим більший, чим довший дріт, і тим менший, чим дріт товщий (S)."
+            },
+            {
+                title: "Крок 3: Розмірність",
+                question: "Перевіримо одиниці вимірювання для опору (R) в цій задачі. Який запис правильний?",
+                options: [
+                    "[R] = м / мм²",
+                    "[R] = (Ом * мм² / м) * м / мм² = Ом",
+                    "[R] = Ом * м",
+                    "[R] = А / В"
+                ],
+                correct: 1,
+                hint: "Всі одиниці (м та мм²) мають скоротитися, залишивши лише Ом."
+            },
+            {
+                title: "Крок 4: Обчислення R",
+                question: "Підставте значення: R = 0,42 * 4 / 0,2. Який результат?",
+                options: ["1,68 Ом", "0,84 Ом", "8,4 Ом", "21 Ом"],
+                correct: 2,
+                hint: "0,42 * 4 = 1,68. Тепер поділіть 1,68 на 0,2 (це як помножити на 5)."
+            },
+            {
+                title: "Крок 5: Пошук напруги",
+                question: "Тепер знайдемо напругу за законом Ома (U = I * R). Чому вона дорівнює, якщо I = 1,5 А, а R = 8,4 Ом?",
+                options: [
+                    "U = 1,5 / 8,4 = 0,18 В",
+                    "U = 1,5 * 8,4 = 12,6 В",
+                    "U = 8,4 / 1,5 = 5,6 В",
+                    "U = 1,5 + 8,4 = 9,9 В"
+                ],
+                correct: 1,
+                hint: "Напруга — це добуток сили струму на опір ділянки кола."
+            }
+        ];
+
+        let currentStep = 0;
+        const stepContent = document.getElementById('step-content');
+        const feedback = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const progress = document.getElementById('progress');
+        const stepIndicator = document.getElementById('step-indicator');
+        const exerciseContainer = document.getElementById('exercise-container');
+        const finalScreen = document.getElementById('final-screen');
+
+        function renderStep() {
+            const step = steps[currentStep];
+            stepContent.innerHTML = `
+                <h3 class="text-xs font-bold text-blue-600 mb-1 uppercase tracking-widest">${step.title}</h3>
+                <p class="text-base font-bold text-gray-800 mb-5 leading-tight">${step.question}</p>
+                <div class="grid gap-3">
+                    ${step.options.map((opt, i) => `
+                        <button onclick="checkAnswer(${i})" class="option-btn text-left p-4 border-2 border-gray-200 rounded-2xl hover:border-blue-400 active:bg-blue-100 transition-all text-sm font-semibold shadow-sm bg-white">
+                            ${opt}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+            
+            feedback.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            stepIndicator.innerText = `Крок ${currentStep + 1} з ${steps.length}`;
+            progress.style.width = `${((currentStep + 1) / steps.length) * 100}%`;
+        }
+
+        window.checkAnswer = function(index) {
+            const step = steps[currentStep];
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.replace('hover:border-blue-400', 'border-gray-100');
+            });
+            
+            if (index === step.correct) {
+                buttons[index].classList.add('correct');
+                feedback.innerHTML = "✅ ВІРНО! Молодці.";
+                feedback.className = "mt-4 p-4 rounded-xl text-center text-sm font-bold border-2 bg-green-50 border-green-200 text-green-700";
+            } else {
+                buttons[index].classList.add('incorrect');
+                buttons[step.correct].classList.add('correct');
+                feedback.innerHTML = `❌ ПОМИЛКА. ${step.hint}`;
+                feedback.className = "mt-4 p-4 rounded-xl text-center text-sm font-bold border-2 bg-red-50 border-red-200 text-red-700";
+            }
+            feedback.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+        };
+
+        nextBtn.onclick = () => {
+            currentStep++;
+            if (currentStep < steps.length) {
+                renderStep();
+                window.scrollTo(0,0);
+            } else {
+                exerciseContainer.classList.add('hidden');
+                document.querySelector('.bg-blue-50').classList.add('hidden');
+                finalScreen.classList.remove('hidden');
+                stepIndicator.classList.add('hidden');
+                progress.style.width = "100%";
+            }
+        };
+
+        renderStep();
+    </script>
+</body>
+</html>
